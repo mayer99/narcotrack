@@ -1,0 +1,26 @@
+com.mayer.Narcotrack -- Application starting...
+com.mayer.Narcotrack -- Connecting to serial port using descriptor COM1
+com.mayer.Narcotrack -- Connected to serial port
+com.mayer.Narcotrack -- Connecting to database
+com.mayer.Narcotrack -- Could not connect to database
+java.sql.SQLNonTransientConnectionException: Socket fail to connect to host:address=(host=127.0.0.1)(port=3306)(type=primary). Connection refused: connect
+	at org.mariadb.jdbc.client.impl.ConnectionHelper.connectSocket(ConnectionHelper.java:137)
+	at org.mariadb.jdbc.client.impl.StandardClient.<init>(StandardClient.java:99)
+	at org.mariadb.jdbc.Driver.connect(Driver.java:70)
+	at org.mariadb.jdbc.Driver.connect(Driver.java:101)
+	at org.mariadb.jdbc.Driver.connect(Driver.java:27)
+	at java.sql/java.sql.DriverManager.getConnection(DriverManager.java:677)
+	at java.sql/java.sql.DriverManager.getConnection(DriverManager.java:228)
+	at com.mayer.Narcotrack.openDatabaseConnection(Narcotrack.java:63)
+	at com.mayer.Narcotrack.<init>(Narcotrack.java:26)
+	at com.mayer.Narcotrack.main(Narcotrack.java:72)
+Caused by: java.net.ConnectException: Connection refused: connect
+	at java.base/java.net.PlainSocketImpl.waitForConnect(Native Method)
+	at java.base/java.net.PlainSocketImpl.socketConnect(PlainSocketImpl.java:107)
+	at java.base/java.net.AbstractPlainSocketImpl.doConnect(AbstractPlainSocketImpl.java:412)
+	at java.base/java.net.AbstractPlainSocketImpl.connectToAddress(AbstractPlainSocketImpl.java:255)
+	at java.base/java.net.AbstractPlainSocketImpl.connect(AbstractPlainSocketImpl.java:237)
+	at java.base/java.net.SocksSocketImpl.connect(SocksSocketImpl.java:392)
+	at java.base/java.net.Socket.connect(Socket.java:608)
+	at org.mariadb.jdbc.client.impl.ConnectionHelper.connectSocket(ConnectionHelper.java:131)
+	... 9 common frames omitted

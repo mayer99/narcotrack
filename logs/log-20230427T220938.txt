@@ -1,0 +1,36 @@
+com.mayer.Narcotrack -- Application starting...
+com.mayer.Narcotrack -- Connecting to serial port using descriptor COM1
+com.mayer.Narcotrack -- Connected to serial port
+com.mayer.Narcotrack -- Connecting to database
+com.mayer.Narcotrack -- Connected to database
+com.mayer.NarcotrackListener -- starting...
+o.m.jdbc.client.impl.StandardClient -- execute query: INSERT INTO recordings(start_time_local, start_time_ntp) VALUES(?, ?)
+com.mayer.NarcotrackListener -- Created recording, id is 130
+com.mayer.NarcotrackStatistics -- No data received during the last interval. Time without data is 5s
+com.mayer.NarcotrackStatistics -- No data received during the last interval. Time without data is 10s
+com.mayer.NarcotrackStatistics -- No data received during the last interval. Time without data is 15s
+com.mayer.NarcotrackStatistics -- No data received during the last interval. Time without data is 20s
+com.mayer.NarcotrackStatistics -- No data received during the last interval. Time without data is 25s
+com.mayer.NarcotrackStatistics -- No data received during the last interval. Time without data is 30s
+com.mayer.NarcotrackStatistics -- No data received during the last interval. Time without data is 35s
+com.mayer.NarcotrackStatistics -- No data received during the last interval. Time without data is 40s
+com.mayer.NarcotrackStatistics -- No data received during the last interval. Time without data is 45s
+com.mayer.NarcotrackStatistics -- No data received during the last interval. Time without data is 50s
+com.mayer.NarcotrackStatistics -- No data received during the last interval. Time without data is 55s
+com.mayer.NarcotrackStatistics -- No data received during the last interval. Time without data is 60s
+com.mayer.NarcotrackStatistics -- No data received since 1min
+com.mayer.NarcotrackStatistics -- No data received during the last interval. Time without data is 65s
+com.mayer.NarcotrackStatistics -- No data received during the last interval. Time without data is 70s
+com.mayer.NarcotrackStatistics -- No data received during the last interval. Time without data is 75s
+com.mayer.NarcotrackStatistics -- No data received during the last interval. Time without data is 80s
+com.mayer.NarcotrackStatistics -- No data received during the last interval. Time without data is 85s
+com.mayer.NarcotrackStatistics -- No data received during the last interval. Time without data is 90s
+com.mayer.NarcotrackStatistics -- No data received during the last interval. Time without data is 95s
+com.mayer.NarcotrackStatistics -- No data received during the last interval. Time without data is 100s
+com.mayer.NarcotrackStatistics -- No data received during the last interval. Time without data is 105s
+com.mayer.NarcotrackStatistics -- No data received during the last interval. Time without data is 110s
+com.mayer.NarcotrackStatistics -- No data received during the last interval. Time without data is 115s
+com.mayer.NarcotrackStatistics -- No data received during the last interval. Time without data is 120s
+com.mayer.NarcotrackStatistics -- No data received since 2min
+com.mayer.NarcotrackStatistics -- Did not receive data for more than 2 minutes. Restarting...
+com.mayer.NarcotrackShutdownHook -- Shutdown Hook triggered, closing serial port and database connection if possible

@@ -1,0 +1,89 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'org.hidetake.ssh' version '2.11.2'
+}
+
+group 'com.mayer'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+remotes {
+    pi {
+        host = 'raspberrypi.local'
+        user = 'pi'
+        password = '!SqYQpB6ssir&DWpsL3Q7#qb'
+    }
+
+}
+jar {
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+
+}
+
+task deploy(type: Jar) {
+
+    manifest {
+        attributes 'Main-Class': 'com.mayer.Narcotrack'
+    }
+    with jar
+
+    doLast {
+        ssh.run {
+            session(remotes.pi) {
+                put from: file('build/libs/Narcotrack-1.0-SNAPSHOT.jar'), into: '/home/pi/Narcotrack'
+            }
+
+        }
+    }
+}
+
+task deployPlayground(type: Jar) {
+
+    manifest {
+        attributes 'Main-Class': 'com.mayer.Playground'
+    }
+    with jar
+
+    doLast {
+        ssh.run {
+            session(remotes.pi) {
+                put from: file('build/libs/Narcotrack-1.0-SNAPSHOT.jar'), into: '/home/pi/Narcotrack'
+            }
+
+        }
+    }
+}
+
+task demoJar(type: Jar) {
+    manifest {
+        attributes 'Main-Class': 'com.mayer.Demo'
+    }
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
+
+dependencies {
+    implementation 'com.fazecast:jSerialComm:2.9.3'
+    implementation 'org.mariadb.jdbc:mariadb-java-client:3.1.2'
+    implementation 'commons-net:commons-net:3.8.0'
+    implementation 'io.socket:socket.io-client:2.1.0'
+    implementation 'ch.qos.logback:logback-core:1.4.6'
+    implementation 'org.slf4j:slf4j-parent:2.0.5'
+    implementation 'ch.qos.logback:logback-classic:1.4.6'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+}
+
+test {
+    useJUnitPlatform()
+}

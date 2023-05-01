@@ -1,0 +1,10 @@
+[Unit]
+Description=Java Application for tracking Narcotrend
+After=syslog.target
+[Service]
+ExecStart=/usr/bin/java -jar /var/springApp/[your .war filename]
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
