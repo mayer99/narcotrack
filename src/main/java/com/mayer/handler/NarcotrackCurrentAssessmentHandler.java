@@ -11,12 +11,30 @@ import java.sql.SQLException;
 public class NarcotrackCurrentAssessmentHandler extends NarcotrackFrameHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(NarcotrackCurrentAssessmentHandler.class);
-    private final byte[] artifacts1;
-    private final byte[] artifacts2;
-    private final byte[] info;
-    private final byte[] reserved1;
-    private final byte[] reserved2;
-    private final byte[] chkSum;
+
+    private int recordId;
+    private int time;
+    private byte[] raw;
+    private short eegIndex, emgIndex;
+    private float deltaRel1, deltaRel2;
+    private float thetaRel1, thetaRel2;
+    private float alphaRel1, alphaRel2;
+    private float betaRel1, betaRel2;
+    private float power1, power2;
+    private float median1, median2;
+    private float edgeFreq1, edgeFreq2;
+    private byte[] artifacts1, artifacts2;
+    private byte alerts;
+    private byte[] info;
+    private float bsrShort1, bsrMedium1;
+    private byte[] reserved1;
+    private short stiCh1, stiCh2;
+    private float bsrShort2, bsrMedium2;
+    private short ibiCh1, ibiCh2;
+    private float aEEGmin1, aEEGmax1;
+    private float aEEGmin2, aEEGmax2;
+    private byte[] reserved2;
+    private byte[] chkSum;
     private int batchCounter = 0;
     public NarcotrackCurrentAssessmentHandler(NarcotrackListener narcotracklistener) throws SQLException {
         super(narcotracklistener, NarcotrackPackageType.CURRENT_ASSESSMENT, "INSERT INTO current_assessment_frame(record_id, recorded_at, eeg_index, emg_index, delta_rel_1, delta_rel_2, theta_rel_1, theta_rel_2, alpha_rel_1, alpha_rel_2, beta_rel_1, beta_rel_2, power_1, power_2, median_1, median_2, edge_freq_1, edge_freq_2, artifacts_1, artifacts_2, alerts , info, bsr_short_1, bsr_medium_1, reserved_1, sti_ch_1, sti_ch_2, bsr_short_2, bsr_medium_2, ibi_ch_1, ibi_ch_2, a_eeg_min_1, a_eeg_max_1, a_eeg_min_2, a_eeg_max_2, reserved_2, chk_sum, raw) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", false);
