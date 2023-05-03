@@ -6,14 +6,14 @@ public class PowerSpectrum {
 
     private static final byte identifier = (byte)0xF3;
     private static final int length = 520;
-    private final int recordId, time;
+    private final int time;
     private final byte[] raw;
     private final int[] spectrum1, spectrum2;
     private final byte info;
     private final byte[] chkSum;
+    private static final byte  startByte = (byte)0xFF;
 
-    public PowerSpectrum(int recordId, int time, ByteBuffer buffer) {
-        this.recordId = recordId;
+    public PowerSpectrum(int time, ByteBuffer buffer) {
         this.time = time;
         buffer.position(buffer.position() - length);
         raw = new byte[length];
@@ -30,7 +30,8 @@ public class PowerSpectrum {
         info = buffer.get();
         chkSum = new byte[2];
         buffer.get(chkSum);
-        buffer.get();
+        // Resetting buffer position to start
+        buffer.position(buffer.position() + 1 - length);
     }
 
     public static byte getIdentifier() {
@@ -41,9 +42,6 @@ public class PowerSpectrum {
         return length;
     }
 
-    public int getRecordId() {
-        return recordId;
-    }
 
     public int getTime() {
         return time;
@@ -67,5 +65,12 @@ public class PowerSpectrum {
 
     public byte[] getChkSum() {
         return chkSum;
+    }
+
+    public static boolean detect(ByteBuffer buffer) {
+        if(buffer.position() < length) return false;
+        if(buffer.get(buffer.position() - length + 3) != identifier) return false;
+        if(buffer.get(buffer.position() - length) != startByte) return false;
+        return true;
     }
 }

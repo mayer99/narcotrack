@@ -3,6 +3,7 @@ package com.mayer;
 import com.fazecast.jSerialComm.SerialPort;
 import com.fazecast.jSerialComm.SerialPortEvent;
 import com.fazecast.jSerialComm.SerialPortMessageListener;
+import com.mayer.factory.*;
 import com.mayer.handler.*;
 import org.apache.commons.net.ntp.NTPUDPClient;
 import org.slf4j.Logger;
@@ -19,24 +20,20 @@ import java.util.Arrays;
 public class NarcotrackListener implements SerialPortMessageListener {
 
     private static final Logger logger = LoggerFactory.getLogger(NarcotrackListener.class);
-    private final Connection databaseConnection;
     private final byte  endByte = (byte)0xFE;
     private final ByteBuffer buffer;
-    private final ArrayList<NarcotrackFrameHandler> handlerList;
+    private final ArrayList<NarcotrackFrameListener> listeners;
     private PreparedStatement remainsStatement;
     private final long startTimeLocal;
     private final long startTimeNTP;
-    private int recordId;
-    private final NarcotrackStatistics statistics;
 
 
 
-    public NarcotrackListener(Connection databaseConnection) {
+    public NarcotrackListener() {
         logger.info("starting...");
-        this.databaseConnection = databaseConnection;
+
         startTimeLocal = System.currentTimeMillis();
         startTimeNTP = getNTPTime();
-
         if (startTimeNTP > 0) {
             logger.debug("Got both times, difference is {}", startTimeLocal - startTimeNTP);
             if (Math.abs(startTimeLocal - startTimeNTP) > 10000) {
@@ -44,49 +41,15 @@ public class NarcotrackListener implements SerialPortMessageListener {
             }
         }
 
-        try {
-            PreparedStatement statement = databaseConnection.prepareStatement("INSERT INTO recordings(start_time_local, start_time_ntp) VALUES(?, ?)", Statement.RETURN_GENERATED_KEYS);
-            statement.setTimestamp(1, new Timestamp(startTimeLocal));
-            if (startTimeNTP > 0) {
-                statement.setTimestamp(2, new Timestamp(startTimeNTP));
-            } else {
-                statement.setNull(2, Types.NULL);
-            }
-            if(statement.executeUpdate() < 1) {
-                logger.error("Could not insert recording, got no rows back");
-                System.exit(1);
-            }
-            ResultSet rs = statement.getGeneratedKeys();
-            if(!rs.next()) {
-                logger.error("Insert of recording did not return an id key");
-                System.exit(1);
-            }
-            recordId = rs.getInt(1);
-            // recordId = rs.getInt("insert_id");
-            rs.close();
-        } catch (SQLException e) {
-            logger.error("Error creating recording", e);
-            System.exit(1);
-        }
-        logger.info("Created recording, id is {}", recordId);
         buffer = ByteBuffer.allocate(50000).order(ByteOrder.LITTLE_ENDIAN);
+
+        listeners = new ArrayList<>();
         try {
-            remainsStatement = databaseConnection.prepareStatement("INSERT INTO remains(record_id, recorded_at, raw) VALUES(?, ?, ?)");
+            listeners.add(new AddingToDatabaseListener(this));
         } catch (SQLException e) {
-            logger.error("Could not create remainsStatement", e);
+            logger.error("Error adding frameListeners to NarcotrackListener", e);
             System.exit(1);
         }
-        handlerList = new ArrayList<>();
-        try {
-            handlerList.add(new NarcotrackEEGHandler(this));
-            handlerList.add(new NarcotrackCurrentAssessmentHandler(this));
-            handlerList.add(new NarcotrackPowerSpectrumHandler(this));
-            handlerList.add(new NarcotrackElectrodeCheckHandler(this));
-        } catch (SQLException e) {
-            logger.error("SQLEx in one of the handlers", e);
-            System.exit(1);
-        }
-        statistics = new NarcotrackStatistics(recordId, startTimeLocal, startTimeNTP);
     }
 
     @Override
@@ -106,25 +69,67 @@ public class NarcotrackListener implements SerialPortMessageListener {
 
     @Override
     public void serialEvent(SerialPortEvent serialPortEvent) {
-        System.out.println("Check des Listeners");
-        logger.debug("SerialPortEvent, length of data is {}. Buffer position: {}", serialPortEvent.getReceivedData().length, buffer.position());
+        logger.debug("SerialPortEvent (length: {}, buffer position: {})", serialPortEvent.getReceivedData().length, buffer.position());
+
         if(serialPortEvent.getReceivedData().length + buffer.position() > buffer.capacity()) {
             if (serialPortEvent.getReceivedData().length > buffer.capacity()) {
-                logger.error("Received more data than can fit in the buffer. Length of getReceivedData() is {}. Moving data and buffer to remains", serialPortEvent.getReceivedData().length);
-                moveBufferToRemains();
-                moveDataToRemains(serialPortEvent.getReceivedData());
+                logger.error("Received more data than the buffer can hold (length: {}, buffer size: {}). Moving data and buffer to remains", serialPortEvent.getReceivedData().length, buffer.capacity());
+                final Remains bufferRemains = new Remains(getTimeDifference(), buffer);
+                final Remains eventRemains = new Remains(getTimeDifference(), serialPortEvent.getReceivedData());
+                listeners.forEach(listener -> listener.onRemains(bufferRemains));
+                listeners.forEach(listener -> listener.onRemains(eventRemains));
                 return;
             }
-            logger.error("Data does not fit in buffer. Clearing buffer and processing newly received data");
-            moveBufferToRemains();
+            logger.error("Buffer cannot hold received data (length of received data: {}, buffer position: {}, buffer capacity: {}). Clearing buffer and processing newly received data", serialPortEvent.getReceivedData().length, buffer.position(), buffer.capacity());
+            final Remains bufferRemains = new Remains(getTimeDifference(), buffer);
+            listeners.forEach(listener -> listener.onRemains(bufferRemains));
         }
         buffer.put(serialPortEvent.getReceivedData());
 
-        for(NarcotrackFrameHandler handler: handlerList) {
-            if(handler.detected(buffer)) {
-                handler.process(buffer);
-                return;
+        // Matching Package Types
+        if (buffer.position() < ElectrodeCheck.getLength()) {
+            logger.debug("Received fragment of {} bytes (warning: fragments longer than 28 bytes are still possible)", buffer.position());
+            return;
+        }
+
+        if (EEG.detect(buffer)) {
+            final EEG eeg = new EEG(getTimeDifference(), buffer);
+            listeners.forEach(listener -> listener.onEEG(eeg));
+            if (buffer.position() > 0) {
+                final Remains bufferRemains = new Remains(getTimeDifference(), buffer);
+                listeners.forEach(listener -> listener.onRemains(bufferRemains));
             }
+            return;
+        }
+
+        if (CurrentAssessment.detect(buffer)) {
+            final CurrentAssessment currentAssessment = new CurrentAssessment(getTimeDifference(), buffer);
+            listeners.forEach(listener -> listener.onCurrentAssessment(currentAssessment));
+            if (buffer.position() > 0) {
+                final Remains bufferRemains = new Remains(getTimeDifference(), buffer);
+                listeners.forEach(listener -> listener.onRemains(bufferRemains));
+            }
+            return;
+        }
+
+        if (PowerSpectrum.detect(buffer)) {
+            final PowerSpectrum powerSpectrum = new PowerSpectrum(getTimeDifference(), buffer);
+            listeners.forEach(listener -> listener.onPowerSpectrum(powerSpectrum));
+            if (buffer.position() > 0) {
+                final Remains bufferRemains = new Remains(getTimeDifference(), buffer);
+                listeners.forEach(listener -> listener.onRemains(bufferRemains));
+            }
+            return;
+        }
+
+        if (ElectrodeCheck.detect(buffer)) {
+            final ElectrodeCheck electrodeCheck = new ElectrodeCheck(getTimeDifference(), buffer);
+            listeners.forEach(listener -> listener.onElectrodeCheck(electrodeCheck));
+            if (buffer.position() > 0) {
+                final Remains bufferRemains = new Remains(getTimeDifference(), buffer);
+                listeners.forEach(listener -> listener.onRemains(bufferRemains));
+            }
+            return;
         }
 
         if(buffer.position() > 0) {
@@ -132,73 +137,13 @@ public class NarcotrackListener implements SerialPortMessageListener {
         }
     }
 
-    public void moveBufferToRemains() {
-        moveBufferToRemains(0);
-    }
-
-    public void moveBufferToRemains(int delimiter) {
-        int endPosition = buffer.position() - delimiter;
-        buffer.position(0);
-        try {
-            remainsStatement.setInt(1, recordId);
-            remainsStatement.setInt(2, Math.toIntExact(System.currentTimeMillis() - startTimeLocal));
-            if (endPosition > 1000) {
-                byte[] chunk = new byte[1000];
-                while (endPosition - buffer.position() > 1000) {
-                    buffer.get(chunk);
-                    remainsStatement.setBytes(3, chunk);
-                    remainsStatement.addBatch();
-                }
-            }
-            byte[] data = new byte[endPosition - buffer.position()];
-            buffer.get(data);
-            remainsStatement.setBytes(3, data);
-            if (endPosition > 1000) {
-                remainsStatement.addBatch();
-                remainsStatement.executeBatch();
-            } else {
-                remainsStatement.executeUpdate();
-            }
-            logger.debug("Sent remains to database");
-
-        } catch (SQLException e) {
-            logger.error("Could not insert remains into database", e);
-        } finally {
-            buffer.clear();
-        }
-    }
-
-    public void moveDataToRemains(byte[] data) {
-        try {
-            remainsStatement.setInt(1, recordId);
-            remainsStatement.setInt(2, Math.toIntExact(System.currentTimeMillis() - startTimeLocal));
-            if (data.length <= 1000) {
-                remainsStatement.setBytes(3, data);
-                remainsStatement.executeUpdate();
-                logger.debug("Sent remains to database");
-            }
-            byte[] chunk;
-            for (int i = 0; i < data.length; i = i + 1000) {
-                chunk = Arrays.copyOfRange(data, i, (i + 1000 > data.length ? data.length - i : i + 1000));
-                logger.info("Chunk size is {}", chunk.length);
-            }
-            logger.debug("Sent remains to database");
-        } catch (SQLException e) {
-            logger.error("Could not send byte[] from getReceivedData() to database", e);
-        }
-    }
-
-    public Connection getDatabaseConnection() {
-        return databaseConnection;
-    }
-
     private long getNTPTime() {
         final NTPUDPClient client = new NTPUDPClient();
-        client.setDefaultTimeout(10000);
+        client.setDefaultTimeout(1000);
         try {
             client.open();
-            // final String[] ntpHosts = new String[]{"0.de.pool.ntp.org", "1.de.pool.ntp.org", "2.de.pool.ntp.org"};
-            final String[] ntpHosts = new String[]{};
+            final String[] ntpHosts = new String[]{"0.de.pool.ntp.org", "1.de.pool.ntp.org", "2.de.pool.ntp.org"};
+            //final String[] ntpHosts = new String[]{};
             for(String ntpHost: ntpHosts) {
                 try {
                     InetAddress hostAddr = InetAddress.getByName(ntpHost);
@@ -211,25 +156,25 @@ public class NarcotrackListener implements SerialPortMessageListener {
                     logger.warn("Could not connect to ntp server {}", ntpHost);
                 }
             }
+            return 0;
         } catch (IOException e) {
-            logger.warn("Could not connect to NTP servers");
+            logger.warn("Error creating NTPUDPClient", e);
+            return 0;
         } finally {
             if (client != null && client.isOpen()) {
                 client.close();
             }
         }
-        return -1;
     }
 
-    public long getStartTime() {
+    public long getStartTimeNTP() {
+        return startTimeNTP;
+    }
+    public long getStartTimeLocal() {
         return startTimeLocal;
     }
 
-    public int getRecordId() {
-        return recordId;
-    }
-
-    public NarcotrackStatistics getStatistics() {
-        return statistics;
+    private int getTimeDifference() {
+        return Math.toIntExact(System.currentTimeMillis() - startTimeLocal);
     }
 }

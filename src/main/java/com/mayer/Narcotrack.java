@@ -4,7 +4,6 @@ import com.fazecast.jSerialComm.SerialPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.*;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
@@ -12,21 +11,33 @@ public class Narcotrack {
 
     private static final Logger logger = LoggerFactory.getLogger(Narcotrack.class);
     private static final String NARCOTRACK_SERIAL_DESCRIPTOR = System.getenv("NARCOTRACK_SERIAL_DESCRIPTOR");
-    private static final String NARCOTRACK_DB_URL = System.getenv("NARCOTRACK_DB_URL");
-    private static final String NARCOTRACK_DB_TABLE = System.getenv("NARCOTRACK_DB_TABLE");
-    private static final String NARCOTRACK_DB_USERNAME = System.getenv("NARCOTRACK_DB_USERNAME");
-    private static final String NARCOTRACK_DB_PASSWORD = System.getenv("NARCOTRACK_DB_PASSWORD");
 
     private SerialPort serialPort;
-    private Connection databaseConnection;
+
 
 
     private Narcotrack() {
         logger.info("Application starting...");
         openSerialConnection();
         openDatabaseConnection();
-        Runtime.getRuntime().addShutdownHook(new NarcotrackShutdownHook(serialPort, databaseConnection));
-        serialPort.addDataListener(new NarcotrackListener(databaseConnection));
+        Runtime.getRuntime().addShutdownHook(new SerialPortShutdownHook(serialPort));
+        serialPort.addDataListener(new NarcotrackListener());
+    }
+
+    class SerialPortShutdownHook extends Thread {
+
+        private final SerialPort serialPort;
+        public SerialPortShutdownHook(SerialPort serialPort) {
+            this.serialPort = serialPort;
+        }
+
+        @Override
+        public void run() {
+            logger.error("Shutdown Hook triggered");
+            if (serialPort != null && serialPort.isOpen()) {
+                serialPort.closePort();
+            }
+        }
     }
 
     private void openSerialConnection() {
@@ -59,14 +70,7 @@ public class Narcotrack {
     }
 
     private void openDatabaseConnection() {
-        logger.debug("Connecting to database");
-        try {
-            databaseConnection = DriverManager.getConnection("jdbc:mariadb://" + NARCOTRACK_DB_URL + ":3306/" + NARCOTRACK_DB_TABLE, NARCOTRACK_DB_USERNAME, NARCOTRACK_DB_PASSWORD);
-            logger.info("Connected to database");
-        } catch (SQLException e) {
-            logger.error("Could not connect to database", e);
-            System.exit(1);
-        }
+
     }
 
     public static void main(String[] args) {
