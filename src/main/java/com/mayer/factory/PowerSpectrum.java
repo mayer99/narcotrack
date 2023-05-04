@@ -2,21 +2,15 @@ package com.mayer.factory;
 
 import java.nio.ByteBuffer;
 
-public class PowerSpectrum {
+public class PowerSpectrum extends NarcotrackFrame {
 
-    private static final byte identifier = (byte)0xF3;
-    private static final int length = 520;
-    private final int time;
-    private final byte[] raw;
     private final int[] spectrum1, spectrum2;
     private final byte info;
     private final byte[] chkSum;
-    private static final byte  startByte = (byte)0xFF;
 
     public PowerSpectrum(int time, ByteBuffer buffer) {
-        this.time = time;
+        super(time, (byte)0xF3, 520);
         buffer.position(buffer.position() - length);
-        raw = new byte[length];
         buffer.get(raw);
         buffer.position(buffer.position() - length + 4);
         spectrum1 = new int[128];
@@ -32,23 +26,6 @@ public class PowerSpectrum {
         buffer.get(chkSum);
         // Resetting buffer position to start
         buffer.position(buffer.position() + 1 - length);
-    }
-
-    public static byte getIdentifier() {
-        return identifier;
-    }
-
-    public static int getLength() {
-        return length;
-    }
-
-
-    public int getTime() {
-        return time;
-    }
-
-    public byte[] getRaw() {
-        return raw;
     }
 
     public int[] getSpectrum1() {
@@ -67,10 +44,4 @@ public class PowerSpectrum {
         return chkSum;
     }
 
-    public static boolean detect(ByteBuffer buffer) {
-        if(buffer.position() < length) return false;
-        if(buffer.get(buffer.position() - length + 3) != identifier) return false;
-        if(buffer.get(buffer.position() - length) != startByte) return false;
-        return true;
-    }
 }

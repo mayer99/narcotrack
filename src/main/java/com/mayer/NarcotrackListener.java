@@ -4,7 +4,6 @@ import com.fazecast.jSerialComm.SerialPort;
 import com.fazecast.jSerialComm.SerialPortEvent;
 import com.fazecast.jSerialComm.SerialPortMessageListener;
 import com.mayer.factory.*;
-import com.mayer.handler.*;
 import org.apache.commons.net.ntp.NTPUDPClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
