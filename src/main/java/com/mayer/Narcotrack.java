@@ -1,6 +1,8 @@
 package com.mayer;
 
 import com.fazecast.jSerialComm.SerialPort;
+import com.fazecast.jSerialComm.SerialPortDataListener;
+import com.fazecast.jSerialComm.SerialPortEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,16 +22,12 @@ public class Narcotrack {
         logger.info("Application starting...");
         openSerialConnection();
         openDatabaseConnection();
-        Runtime.getRuntime().addShutdownHook(new SerialPortShutdownHook(serialPort));
+        Runtime.getRuntime().addShutdownHook(new SerialPortShutdownHook());
         serialPort.addDataListener(new NarcotrackListener());
+        serialPort.addDataListener(new SerialPortDisconnectListener());
     }
 
     class SerialPortShutdownHook extends Thread {
-
-        private final SerialPort serialPort;
-        public SerialPortShutdownHook(SerialPort serialPort) {
-            this.serialPort = serialPort;
-        }
 
         @Override
         public void run() {
@@ -37,6 +35,19 @@ public class Narcotrack {
             if (serialPort != null && serialPort.isOpen()) {
                 serialPort.closePort();
             }
+        }
+    }
+
+    class SerialPortDisconnectListener implements SerialPortDataListener {
+
+        @Override
+        public int getListeningEvents() {
+            return SerialPort.LISTENING_EVENT_PORT_DISCONNECTED;
+        }
+
+        @Override
+        public void serialEvent(SerialPortEvent event) {
+            logger.error("Listener noticed disconnect of serial port");
         }
     }
 

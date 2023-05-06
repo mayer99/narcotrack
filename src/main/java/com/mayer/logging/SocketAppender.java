@@ -1,4 +1,4 @@
-package com.mayer;
+package com.mayer.logging;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.AppenderBase;

@@ -1,8 +1,9 @@
-package com.mayer.factory;
+package com.mayer.frames;
 
 import java.nio.ByteBuffer;
 
 public class CurrentAssessment extends NarcotrackFrame {
+
     private final short eegIndex, emgIndex;
     private final float deltaRel1, deltaRel2;
     private final float thetaRel1, thetaRel2;
@@ -25,7 +26,7 @@ public class CurrentAssessment extends NarcotrackFrame {
     private final byte[] chkSum;
 
     public CurrentAssessment(int time, ByteBuffer buffer) {
-        super (time, (byte)0xF2, 128);
+        super (time, NarcotrackFrames.CURRENT_ASSESSMENT);
         buffer.position(buffer.position() - length);
         buffer.get(raw);
         buffer.position(buffer.position() - length + 4);

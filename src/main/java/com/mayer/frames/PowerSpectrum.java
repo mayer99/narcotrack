@@ -1,4 +1,4 @@
-package com.mayer.factory;
+package com.mayer.frames;
 
 import java.nio.ByteBuffer;
 
@@ -9,7 +9,7 @@ public class PowerSpectrum extends NarcotrackFrame {
     private final byte[] chkSum;
 
     public PowerSpectrum(int time, ByteBuffer buffer) {
-        super(time, (byte)0xF3, 520);
+        super(time, NarcotrackFrames.POWER_SPECTRUM);
         buffer.position(buffer.position() - length);
         buffer.get(raw);
         buffer.position(buffer.position() - length + 4);

@@ -1,4 +1,4 @@
-package com.mayer.factory;
+package com.mayer;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;

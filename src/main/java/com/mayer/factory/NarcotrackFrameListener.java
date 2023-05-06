@@ -1,24 +1,30 @@
 package com.mayer.factory;
 
-public abstract class NarcotrackFrameListener {
+import com.mayer.Remains;
+import com.mayer.frames.CurrentAssessment;
+import com.mayer.frames.EEG;
+import com.mayer.frames.ElectrodeCheck;
+import com.mayer.frames.PowerSpectrum;
 
-    public void onEEG(EEG data) {
+public interface NarcotrackFrameListener {
 
-    }
-
-    public void onCurrentAssessment(CurrentAssessment data) {
-
-    }
-
-    public void onPowerSpectrum(PowerSpectrum data) {
+    default void onEEG(EEG data) {
 
     }
 
-    public void onElectrodeCheck(ElectrodeCheck data) {
+    default void onCurrentAssessment(CurrentAssessment data) {
 
     }
 
-    public void onRemains(Remains data) {
+    default void onPowerSpectrum(PowerSpectrum data) {
+
+    }
+
+    default void onElectrodeCheck(ElectrodeCheck data) {
+
+    }
+
+    default void onRemains(Remains data) {
 
     }
 

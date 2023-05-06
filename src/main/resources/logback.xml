@@ -11,7 +11,7 @@
             <pattern>%logger{35} -%kvp- %msg%n</pattern>
         </encoder>
     </appender>
-    <appender name="SOCKET" class="com.mayer.SocketAppender">
+    <appender name="SOCKET" class="com.mayer.logging.SocketAppender">
         <prefix>SocketIO</prefix>
     </appender>
 

@@ -1,4 +1,4 @@
-package com.mayer;
+package com.mayer.demo;
 
 import com.fazecast.jSerialComm.SerialPort;
 import org.slf4j.Logger;
@@ -17,9 +17,25 @@ public class Demo {
     private Demo() {
         logger.info("Application starting...");
         openSerialConnection();
-        Runtime.getRuntime().addShutdownHook(new NarcotrackShutdownHook(serialPort, null));
+        Runtime.getRuntime().addShutdownHook(new SerialPortShutdownHook(serialPort));
         serialPort.addDataListener(new DemoListener());
 
+    }
+
+    class SerialPortShutdownHook extends Thread {
+
+        private final SerialPort serialPort;
+        public SerialPortShutdownHook(SerialPort serialPort) {
+            this.serialPort = serialPort;
+        }
+
+        @Override
+        public void run() {
+            logger.error("Shutdown Hook triggered");
+            if (serialPort != null && serialPort.isOpen()) {
+                serialPort.closePort();
+            }
+        }
     }
 
     private void openSerialConnection() {

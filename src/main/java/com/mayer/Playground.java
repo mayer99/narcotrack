@@ -1,17 +1,11 @@
 package com.mayer;
 
-import com.fazecast.jSerialComm.SerialPort;
+import com.mayer.frames.NarcotrackFrames;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
-import java.text.DecimalFormat;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.Comparator;
 
 
 public class Playground {
@@ -32,9 +26,7 @@ public class Playground {
         //DecimalFormat decimalFormat = new DecimalFormat("0.00");
         //logger.info(decimalFormat.format((double) 1 /5));
 
-        logger.info("System Variable TOKEN {}", System.getenv("TOKEN"));
-        logger.info("System Variable TOKEN2 {}", System.getenv("TOKEN2"));
-        logger.info("System Variable TOKEN NO {}", System.getenv("TOKEN3"));
-        logger.info("Test Hi Tim");
+        logger.info("Smallest ist {}", Arrays.stream(NarcotrackFrames.values()).min(Comparator.comparing(NarcotrackFrames::getLength)).get());
+        logger.info(System.getenv("TESTERERERER"));
     }
 }

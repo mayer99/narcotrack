@@ -1,15 +1,21 @@
-package com.mayer.factory;
+package com.mayer.listeners;
 
 import com.mayer.NarcotrackListener;
+import com.mayer.factory.NarcotrackFrameListener;
+import com.mayer.Remains;
+import com.mayer.frames.CurrentAssessment;
+import com.mayer.frames.EEG;
+import com.mayer.frames.ElectrodeCheck;
+import com.mayer.frames.PowerSpectrum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.Arrays;
 
-public class AddingToDatabaseListener extends NarcotrackFrameListener {
+public class MariaDatabaseListener implements NarcotrackFrameListener {
 
-    private static final Logger logger = LoggerFactory.getLogger(AddingToDatabaseListener.class);
+    private static final Logger logger = LoggerFactory.getLogger(MariaDatabaseListener.class);
     private final String NARCOTRACK_DB_URL = System.getenv("NARCOTRACK_DB_URL");
     private final String NARCOTRACK_DB_TABLE = System.getenv("NARCOTRACK_DB_TABLE");
     private final String NARCOTRACK_DB_USERNAME = System.getenv("NARCOTRACK_DB_USERNAME");
@@ -27,7 +33,7 @@ public class AddingToDatabaseListener extends NarcotrackFrameListener {
     private int eegBatchCounter = 0;
     private int currentAssessmentBatchCounter = 0;
 
-    public AddingToDatabaseListener(NarcotrackListener narcotrackListener) throws SQLException {
+    public MariaDatabaseListener(NarcotrackListener narcotrackListener) throws SQLException {
         this.narcotrackListener = narcotrackListener;
 
         logger.debug("Connecting to database {}", NARCOTRACK_DB_URL);

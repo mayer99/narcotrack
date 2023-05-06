@@ -4,6 +4,8 @@ import com.fazecast.jSerialComm.SerialPort;
 import com.fazecast.jSerialComm.SerialPortEvent;
 import com.fazecast.jSerialComm.SerialPortMessageListener;
 import com.mayer.factory.*;
+import com.mayer.frames.*;
+import com.mayer.listeners.MariaDatabaseListener;
 import org.apache.commons.net.ntp.NTPUDPClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,14 +17,16 @@ import java.nio.ByteOrder;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 
 public class NarcotrackListener implements SerialPortMessageListener {
 
     private static final Logger logger = LoggerFactory.getLogger(NarcotrackListener.class);
+    private static final byte  startByte = (byte)0xFF;
     private final byte  endByte = (byte)0xFE;
     private final ByteBuffer buffer;
+    private final NarcotrackFrames shortestFrame;
     private final ArrayList<NarcotrackFrameListener> listeners;
-    private PreparedStatement remainsStatement;
     private final long startTimeLocal;
     private final long startTimeNTP;
 
@@ -41,10 +45,15 @@ public class NarcotrackListener implements SerialPortMessageListener {
         }
 
         buffer = ByteBuffer.allocate(50000).order(ByteOrder.LITTLE_ENDIAN);
+        shortestFrame = Arrays.stream(NarcotrackFrames.values()).min(Comparator.comparing(NarcotrackFrames::getLength)).get();
+        if (shortestFrame == null) {
+            logger.error("No entrys in enum NarcotrackFrames");
+            System.exit(1);
+        }
 
         listeners = new ArrayList<>();
         try {
-            listeners.add(new AddingToDatabaseListener(this));
+            listeners.add(new MariaDatabaseListener(this));
         } catch (SQLException e) {
             logger.error("Error adding frameListeners to NarcotrackListener", e);
             System.exit(1);
@@ -86,48 +95,42 @@ public class NarcotrackListener implements SerialPortMessageListener {
         buffer.put(serialPortEvent.getReceivedData());
 
         // Matching Package Types
-        if (buffer.position() < ElectrodeCheck.getLength()) {
-            logger.debug("Received fragment of {} bytes (warning: fragments longer than 28 bytes are still possible)", buffer.position());
+        if (buffer.position() < shortestFrame.getLength()) {
+            logger.debug("Received fragment of {} bytes", buffer.position());
             return;
         }
 
-        if (EEG.detect(buffer)) {
-            final EEG eeg = new EEG(getTimeDifference(), buffer);
-            listeners.forEach(listener -> listener.onEEG(eeg));
+        for (NarcotrackFrames frame: NarcotrackFrames.values()) {
+            if (buffer.position() < frame.getLength()) continue;
+            if (buffer.get(buffer.position() - frame.getLength() + 3) != frame.getIdentifier()) continue;
+            if (buffer.get(buffer.position() - frame.getLength()) != startByte) continue;
+
+            logger.debug("Found a frame of type {} in the buffer", frame);
+
+            switch (frame) {
+                case EEG:
+                    final EEG eeg = new EEG(getTimeDifference(), buffer);
+                    listeners.forEach(narcotrackFrameListener -> narcotrackFrameListener.onEEG(eeg));
+                    break;
+                case CURRENT_ASSESSMENT:
+                    final CurrentAssessment currentAssessment = new CurrentAssessment(getTimeDifference(), buffer);
+                    listeners.forEach(narcotrackFrameListener -> narcotrackFrameListener.onCurrentAssessment(currentAssessment));
+                    break;
+                case POWER_SPECTRUM:
+                    final PowerSpectrum powerSpectrum = new PowerSpectrum(getTimeDifference(), buffer);
+                    listeners.forEach(narcotrackFrameListener -> narcotrackFrameListener.onPowerSpectrum(powerSpectrum));
+                    break;
+                case ELECTRODE_CHECK:
+                    final ElectrodeCheck electrodeCheck = new ElectrodeCheck(getTimeDifference(), buffer);
+                    listeners.forEach(narcotrackFrameListener -> narcotrackFrameListener.onElectrodeCheck(electrodeCheck));
+                    break;
+            }
+
             if (buffer.position() > 0) {
                 final Remains bufferRemains = new Remains(getTimeDifference(), buffer);
                 listeners.forEach(listener -> listener.onRemains(bufferRemains));
             }
-            return;
-        }
 
-        if (CurrentAssessment.detect(buffer)) {
-            final CurrentAssessment currentAssessment = new CurrentAssessment(getTimeDifference(), buffer);
-            listeners.forEach(listener -> listener.onCurrentAssessment(currentAssessment));
-            if (buffer.position() > 0) {
-                final Remains bufferRemains = new Remains(getTimeDifference(), buffer);
-                listeners.forEach(listener -> listener.onRemains(bufferRemains));
-            }
-            return;
-        }
-
-        if (PowerSpectrum.detect(buffer)) {
-            final PowerSpectrum powerSpectrum = new PowerSpectrum(getTimeDifference(), buffer);
-            listeners.forEach(listener -> listener.onPowerSpectrum(powerSpectrum));
-            if (buffer.position() > 0) {
-                final Remains bufferRemains = new Remains(getTimeDifference(), buffer);
-                listeners.forEach(listener -> listener.onRemains(bufferRemains));
-            }
-            return;
-        }
-
-        if (ElectrodeCheck.detect(buffer)) {
-            final ElectrodeCheck electrodeCheck = new ElectrodeCheck(getTimeDifference(), buffer);
-            listeners.forEach(listener -> listener.onElectrodeCheck(electrodeCheck));
-            if (buffer.position() > 0) {
-                final Remains bufferRemains = new Remains(getTimeDifference(), buffer);
-                listeners.forEach(listener -> listener.onRemains(bufferRemains));
-            }
             return;
         }
 
@@ -138,11 +141,10 @@ public class NarcotrackListener implements SerialPortMessageListener {
 
     private long getNTPTime() {
         final NTPUDPClient client = new NTPUDPClient();
-        client.setDefaultTimeout(1000);
+        client.setDefaultTimeout(2000);
         try {
             client.open();
             final String[] ntpHosts = new String[]{"0.de.pool.ntp.org", "1.de.pool.ntp.org", "2.de.pool.ntp.org"};
-            //final String[] ntpHosts = new String[]{};
             for(String ntpHost: ntpHosts) {
                 try {
                     InetAddress hostAddr = InetAddress.getByName(ntpHost);

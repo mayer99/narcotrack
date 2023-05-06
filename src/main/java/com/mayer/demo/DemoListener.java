@@ -1,20 +1,10 @@
-package com.mayer;
+package com.mayer.demo;
 
 import com.fazecast.jSerialComm.SerialPort;
 import com.fazecast.jSerialComm.SerialPortEvent;
 import com.fazecast.jSerialComm.SerialPortMessageListener;
-import com.mayer.handler.*;
-import org.apache.commons.net.ntp.NTPUDPClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.net.InetAddress;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.Arrays;
 
 public class DemoListener implements SerialPortMessageListener {
 

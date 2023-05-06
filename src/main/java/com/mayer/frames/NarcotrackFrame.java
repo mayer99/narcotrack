@@ -1,17 +1,17 @@
-package com.mayer.factory;
+package com.mayer.frames;
 
+
+import com.mayer.frames.NarcotrackFrames;
 
 public abstract class NarcotrackFrame {
 
     protected final int time;
-    protected final byte identifier;
     protected final int length;
     protected final byte[] raw;
 
-    public NarcotrackFrame(int time, byte identifier, int length) {
+    public NarcotrackFrame(int time, NarcotrackFrames frame) {
         this.time = time;
-        this.identifier = identifier;
-        this.length = length;
+        this.length = frame.getLength();
         raw = new byte[length];
     }
 
@@ -21,5 +21,7 @@ public abstract class NarcotrackFrame {
 
     public byte[] getRaw() {
         return raw;
+
     }
+
 }
