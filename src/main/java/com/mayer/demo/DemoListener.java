@@ -8,18 +8,18 @@ import org.slf4j.LoggerFactory;
 
 public class DemoListener implements SerialPortMessageListener {
 
-    private static final Logger logger = LoggerFactory.getLogger(DemoListener.class);
-    private final byte  endByte = (byte)0xFE;
+    private static final Logger LOGGER = LoggerFactory.getLogger(DemoListener.class);
+    private static final byte END_BYTE = (byte)0xFE;
 
 
 
     public DemoListener() {
-        logger.info("starting...");
+        LOGGER.info("starting...");
     }
 
     @Override
     public byte[] getMessageDelimiter() {
-        return new byte[] {endByte};
+        return new byte[] {END_BYTE};
     }
 
     @Override
@@ -34,7 +34,7 @@ public class DemoListener implements SerialPortMessageListener {
 
     @Override
     public void serialEvent(SerialPortEvent serialPortEvent) {
-        logger.debug("SerialPortEvent, length of data is {}", serialPortEvent.getReceivedData().length);
+        LOGGER.debug("SerialPortEvent, length of data is {}", serialPortEvent.getReceivedData().length);
 
     }
 

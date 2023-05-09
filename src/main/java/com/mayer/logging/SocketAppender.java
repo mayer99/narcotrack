@@ -12,8 +12,8 @@ import java.util.Collections;
 
 public class SocketAppender extends AppenderBase<ILoggingEvent> {
 
-    private static final String NARCOTRACK_API_URL = System.getenv("NARCOTRACK_API_URL");
-    private static final String NARCOTRACK_API_TOKEN = System.getenv("NARCOTRACK_API_TOKEN");
+    private final String narcotrackApiUrl = System.getenv("NARCOTRACK_API_URL");
+    private final String narcotrackApiToken = System.getenv("NARCOTRACK_API_TOKEN");
     private String prefix;
     private boolean guard = false;
     private URI uri;
@@ -21,12 +21,18 @@ public class SocketAppender extends AppenderBase<ILoggingEvent> {
     private Socket socket;
 
     public SocketAppender() {
-        uri = URI.create(NARCOTRACK_API_URL);
-        options = IO.Options.builder()
-                .setAuth(Collections.singletonMap("token", NARCOTRACK_API_TOKEN))
-                .build();
-        socket = IO.socket(uri, options);
-        socket.connect();
+
+        try {
+            System.out.println("URL " + narcotrackApiUrl);
+            uri = URI.create(narcotrackApiUrl);
+            options = IO.Options.builder()
+                    .setAuth(Collections.singletonMap("token", narcotrackApiToken))
+                    .build();
+            socket = IO.socket(uri, options);
+            socket.connect();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

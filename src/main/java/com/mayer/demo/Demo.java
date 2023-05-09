@@ -7,15 +7,15 @@ import org.slf4j.LoggerFactory;
 
 public class Demo {
 
-    private static final Logger logger = LoggerFactory.getLogger(Demo.class);
-    //private final String serialPortDescriptor = "COM1";
-    private final String serialPortDescriptor = "/dev/ttyUSB0";
+    private static final Logger LOGGER = LoggerFactory.getLogger(Demo.class);
+    //private static final String SERIAL_PORT_DESCRIPTOR = "COM1";
+    private static final String SERIAL_PORT_DESCRIPTOR = "/dev/ttyUSB0";
 
     private SerialPort serialPort;
 
 
     private Demo() {
-        logger.info("Application starting...");
+        LOGGER.info("Application starting...");
         openSerialConnection();
         Runtime.getRuntime().addShutdownHook(new SerialPortShutdownHook(serialPort));
         serialPort.addDataListener(new DemoListener());
@@ -31,7 +31,7 @@ public class Demo {
 
         @Override
         public void run() {
-            logger.error("Shutdown Hook triggered");
+            LOGGER.error("Shutdown Hook triggered");
             if (serialPort != null && serialPort.isOpen()) {
                 serialPort.closePort();
             }
@@ -39,17 +39,17 @@ public class Demo {
     }
 
     private void openSerialConnection() {
-        logger.debug("Connecting to serial port using descriptor {}", serialPortDescriptor);
-        serialPort = SerialPort.getCommPort(serialPortDescriptor);
+        LOGGER.debug("Connecting to serial port using descriptor {}", SERIAL_PORT_DESCRIPTOR);
+        serialPort = SerialPort.getCommPort(SERIAL_PORT_DESCRIPTOR);
         serialPort.setBaudRate(115200);
         serialPort.setNumDataBits(8);
         serialPort.setParity(SerialPort.NO_PARITY);
         serialPort.setNumStopBits(SerialPort.ONE_STOP_BIT);
         if(serialPort.openPort()) {
-            logger.info("Connected to serial port");
+            LOGGER.info("Connected to serial port");
         } else {
-            logger.error("Could not connect to serial port, serialPortDescriptor: {}", serialPortDescriptor);
-            logger.error("There are {} comm ports available", SerialPort.getCommPorts().length);
+            LOGGER.error("Could not connect to serial port, serialPortDescriptor: {}", SERIAL_PORT_DESCRIPTOR);
+            LOGGER.error("There are {} comm ports available", SerialPort.getCommPorts().length);
             System.exit(1);
         }
     }

@@ -25,8 +25,8 @@ public class CurrentAssessment extends NarcotrackFrame {
     private final byte[] reserved2;
     private final byte[] chkSum;
 
-    public CurrentAssessment(int time, ByteBuffer buffer) {
-        super (time, NarcotrackFrames.CURRENT_ASSESSMENT);
+    public CurrentAssessment(ByteBuffer buffer) {
+        super (NarcotrackFrames.CURRENT_ASSESSMENT);
         buffer.position(buffer.position() - length);
         buffer.get(raw);
         buffer.position(buffer.position() - length + 4);

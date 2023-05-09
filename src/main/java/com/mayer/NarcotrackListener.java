@@ -3,9 +3,11 @@ package com.mayer;
 import com.fazecast.jSerialComm.SerialPort;
 import com.fazecast.jSerialComm.SerialPortEvent;
 import com.fazecast.jSerialComm.SerialPortMessageListener;
-import com.mayer.factory.*;
-import com.mayer.frames.*;
-import com.mayer.listeners.MariaDatabaseListener;
+import com.mayer.events.*;
+import com.mayer.factory.NarcotrackEventHandler;
+import com.mayer.frames.NarcotrackFrames;
+import com.mayer.listeners.MariaDatabaseHandler;
+import com.mayer.listeners.StatisticHandler;
 import org.apache.commons.net.ntp.NTPUDPClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,55 +16,58 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.sql.*;
-import java.util.ArrayList;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Comparator;
 
 public class NarcotrackListener implements SerialPortMessageListener {
 
-    private static final Logger logger = LoggerFactory.getLogger(NarcotrackListener.class);
-    private static final byte  startByte = (byte)0xFF;
-    private final byte  endByte = (byte)0xFE;
+    private static final Logger LOGGER = LoggerFactory.getLogger(NarcotrackListener.class);
+    private static final byte START_BYTE = (byte)0xFF;
+    private static final byte END_BYTE = (byte)0xFE;
+
     private final ByteBuffer buffer;
     private final NarcotrackFrames shortestFrame;
-    private final ArrayList<NarcotrackFrameListener> listeners;
     private final long startTimeLocal;
     private final long startTimeNTP;
 
-
-
     public NarcotrackListener() {
-        logger.info("starting...");
+        LOGGER.info("starting...");
 
         startTimeLocal = System.currentTimeMillis();
         startTimeNTP = getNTPTime();
         if (startTimeNTP > 0) {
-            logger.debug("Got both times, difference is {}", startTimeLocal - startTimeNTP);
+            LOGGER.debug("Got both times, difference is {}", startTimeLocal - startTimeNTP);
             if (Math.abs(startTimeLocal - startTimeNTP) > 10000) {
-                logger.error("Times differ more than 10s!");
+                LOGGER.error("Times differ more than 10s!");
             }
         }
 
         buffer = ByteBuffer.allocate(50000).order(ByteOrder.LITTLE_ENDIAN);
-        shortestFrame = Arrays.stream(NarcotrackFrames.values()).min(Comparator.comparing(NarcotrackFrames::getLength)).get();
-        if (shortestFrame == null) {
-            logger.error("No entrys in enum NarcotrackFrames");
-            System.exit(1);
-        }
+        shortestFrame = Arrays.stream(NarcotrackFrames.values()).min(Comparator.comparing(NarcotrackFrames::getLength)).orElse(NarcotrackFrames.ELECTRODE_CHECK);
 
-        listeners = new ArrayList<>();
         try {
-            listeners.add(new MariaDatabaseListener(this));
+            final MariaDatabaseHandler mariaDatabaseHandler = new MariaDatabaseHandler(this);
+            final StatisticHandler statisticHandler = new StatisticHandler(startTimeLocal, startTimeNTP);
+            EEGEvent.getEventHandlers().add(mariaDatabaseHandler);
+            EEGEvent.getEventHandlers().add(statisticHandler);
+            CurrentAssessmentEvent.getEventHandlers().add(mariaDatabaseHandler);
+            CurrentAssessmentEvent.getEventHandlers().add(statisticHandler);
+            PowerSpectrumEvent.getEventHandlers().add(mariaDatabaseHandler);
+            PowerSpectrumEvent.getEventHandlers().add(statisticHandler);
+            ElectrodeCheckEvent.getEventHandlers().add(mariaDatabaseHandler);
+            ElectrodeCheckEvent.getEventHandlers().add(statisticHandler);
+            RemainsEvent.getEventHandlers().add(mariaDatabaseHandler);
+            RemainsEvent.getEventHandlers().add(statisticHandler);
         } catch (SQLException e) {
-            logger.error("Error adding frameListeners to NarcotrackListener", e);
+            LOGGER.error("Error adding frameListeners to NarcotrackListener", e);
             System.exit(1);
         }
     }
 
     @Override
     public byte[] getMessageDelimiter() {
-        return new byte[] {endByte};
+        return new byte[] {END_BYTE};
     }
 
     @Override
@@ -77,65 +82,59 @@ public class NarcotrackListener implements SerialPortMessageListener {
 
     @Override
     public void serialEvent(SerialPortEvent serialPortEvent) {
-        logger.debug("SerialPortEvent (length: {}, buffer position: {})", serialPortEvent.getReceivedData().length, buffer.position());
+        LOGGER.debug("SerialPortEvent (length: {}, buffer position: {})", serialPortEvent.getReceivedData().length, buffer.position());
 
         if(serialPortEvent.getReceivedData().length + buffer.position() > buffer.capacity()) {
             if (serialPortEvent.getReceivedData().length > buffer.capacity()) {
-                logger.error("Received more data than the buffer can hold (length: {}, buffer size: {}). Moving data and buffer to remains", serialPortEvent.getReceivedData().length, buffer.capacity());
-                final Remains bufferRemains = new Remains(getTimeDifference(), buffer);
-                final Remains eventRemains = new Remains(getTimeDifference(), serialPortEvent.getReceivedData());
-                listeners.forEach(listener -> listener.onRemains(bufferRemains));
-                listeners.forEach(listener -> listener.onRemains(eventRemains));
+                LOGGER.error("Received more data than the buffer can hold (length: {}, buffer size: {}). Moving data and buffer to remains", serialPortEvent.getReceivedData().length, buffer.capacity());
+                new RemainsEvent(getTimeDifference(), buffer);
+                new RemainsEvent(getTimeDifference(), serialPortEvent.getReceivedData());
                 return;
+            } else {
+                LOGGER.error("Buffer cannot hold received data (length of received data: {}, buffer position: {}, buffer capacity: {}). Clearing buffer and processing newly received data", serialPortEvent.getReceivedData().length, buffer.position(), buffer.capacity());
+                new RemainsEvent(getTimeDifference(), buffer);
             }
-            logger.error("Buffer cannot hold received data (length of received data: {}, buffer position: {}, buffer capacity: {}). Clearing buffer and processing newly received data", serialPortEvent.getReceivedData().length, buffer.position(), buffer.capacity());
-            final Remains bufferRemains = new Remains(getTimeDifference(), buffer);
-            listeners.forEach(listener -> listener.onRemains(bufferRemains));
         }
+
         buffer.put(serialPortEvent.getReceivedData());
 
         // Matching Package Types
         if (buffer.position() < shortestFrame.getLength()) {
-            logger.debug("Received fragment of {} bytes", buffer.position());
+            LOGGER.debug("Received fragment of {} bytes", buffer.position());
             return;
         }
-
-        for (NarcotrackFrames frame: NarcotrackFrames.values()) {
+ 
+        for (NarcotrackFrames frame : NarcotrackFrames.values()) {
             if (buffer.position() < frame.getLength()) continue;
             if (buffer.get(buffer.position() - frame.getLength() + 3) != frame.getIdentifier()) continue;
-            if (buffer.get(buffer.position() - frame.getLength()) != startByte) continue;
+            if (buffer.get(buffer.position() - frame.getLength()) != START_BYTE) continue;
 
-            logger.debug("Found a frame of type {} in the buffer", frame);
+            LOGGER.debug("Found a frame of type {} in the buffer", frame);
 
             switch (frame) {
                 case EEG:
-                    final EEG eeg = new EEG(getTimeDifference(), buffer);
-                    listeners.forEach(narcotrackFrameListener -> narcotrackFrameListener.onEEG(eeg));
+                    new EEGEvent(getTimeDifference(), buffer);
                     break;
                 case CURRENT_ASSESSMENT:
-                    final CurrentAssessment currentAssessment = new CurrentAssessment(getTimeDifference(), buffer);
-                    listeners.forEach(narcotrackFrameListener -> narcotrackFrameListener.onCurrentAssessment(currentAssessment));
+                    new CurrentAssessmentEvent(getTimeDifference(), buffer);
                     break;
                 case POWER_SPECTRUM:
-                    final PowerSpectrum powerSpectrum = new PowerSpectrum(getTimeDifference(), buffer);
-                    listeners.forEach(narcotrackFrameListener -> narcotrackFrameListener.onPowerSpectrum(powerSpectrum));
+                    new PowerSpectrumEvent(getTimeDifference(), buffer);
                     break;
                 case ELECTRODE_CHECK:
-                    final ElectrodeCheck electrodeCheck = new ElectrodeCheck(getTimeDifference(), buffer);
-                    listeners.forEach(narcotrackFrameListener -> narcotrackFrameListener.onElectrodeCheck(electrodeCheck));
+                    new ElectrodeCheckEvent(getTimeDifference(), buffer);
                     break;
             }
 
             if (buffer.position() > 0) {
-                final Remains bufferRemains = new Remains(getTimeDifference(), buffer);
-                listeners.forEach(listener -> listener.onRemains(bufferRemains));
+                new RemainsEvent(getTimeDifference(), buffer);
             }
 
             return;
         }
 
-        if(buffer.position() > 0) {
-            logger.warn("Received data than could not be matched to a handler. Buffer-Length is {}", buffer.position());
+        if (buffer.position() > 0) {
+            LOGGER.warn("Received data than could not be matched to a handler. Buffer-Length is {}", buffer.position());
         }
     }
 
@@ -154,12 +153,12 @@ public class NarcotrackListener implements SerialPortMessageListener {
                             .getTransmitTimeStamp()
                             .getTime();
                 } catch (IOException e) {
-                    logger.warn("Could not connect to ntp server {}", ntpHost);
+                    LOGGER.warn("Could not connect to ntp server {}", ntpHost);
                 }
             }
             return 0;
         } catch (IOException e) {
-            logger.warn("Error creating NTPUDPClient", e);
+            LOGGER.warn("Error creating NTPUDPClient", e);
             return 0;
         } finally {
             if (client != null && client.isOpen()) {
@@ -174,7 +173,6 @@ public class NarcotrackListener implements SerialPortMessageListener {
     public long getStartTimeLocal() {
         return startTimeLocal;
     }
-
     private int getTimeDifference() {
         return Math.toIntExact(System.currentTimeMillis() - startTimeLocal);
     }

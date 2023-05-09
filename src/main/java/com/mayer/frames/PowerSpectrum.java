@@ -8,8 +8,8 @@ public class PowerSpectrum extends NarcotrackFrame {
     private final byte info;
     private final byte[] chkSum;
 
-    public PowerSpectrum(int time, ByteBuffer buffer) {
-        super(time, NarcotrackFrames.POWER_SPECTRUM);
+    public PowerSpectrum(ByteBuffer buffer) {
+        super(NarcotrackFrames.POWER_SPECTRUM);
         buffer.position(buffer.position() - length);
         buffer.get(raw);
         buffer.position(buffer.position() - length + 4);

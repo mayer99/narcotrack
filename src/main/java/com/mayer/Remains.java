@@ -6,46 +6,39 @@ import java.util.Arrays;
 
 public class Remains {
 
-    private final ArrayList<byte[]> data;
-    private final int time;
+    private final ArrayList<byte[]> chunks;
 
-    public Remains(int time, ByteBuffer buffer) {
-        this.time = time;
-        data = new ArrayList<>();
+    public Remains(ByteBuffer buffer) {
+        chunks = new ArrayList<>();
         final byte[] chunk = new byte[1000];
         int endPosition = buffer.position();
         buffer.position(0);
         while (endPosition - buffer.position() > 1000) {
             buffer.get(chunk);
-            data.add(chunk);
+            chunks.add(chunk);
         }
         if (endPosition - buffer.position() > 0) {
             byte[] lastChunk = new byte[endPosition - buffer.position()];
             buffer.get(lastChunk);
-            data.add(lastChunk);
+            chunks.add(lastChunk);
         }
         buffer.position(0);
     }
 
-    public Remains(int time, byte[] incomingData) {
-        this.time = time;
-        data = new ArrayList<>();
+    public Remains(byte[] incomingData) {
+        chunks = new ArrayList<>();
 
         if (incomingData.length > 1000) {
             for (int i = 0; i < incomingData.length; i = i + 1000) {
-                data.add(Arrays.copyOfRange(incomingData, i, incomingData.length - i > 1000 ? i + 1000 : incomingData.length - i));
+                chunks.add(Arrays.copyOfRange(incomingData, i, incomingData.length - i > 1000 ? i + 1000 : incomingData.length - i));
             }
         }
         else {
-            data.add(incomingData);
+            chunks.add(incomingData);
         }
     }
 
-    public int getTime() {
-        return time;
-    }
-
-    public ArrayList<byte[]> getData() {
-        return data;
+    public ArrayList<byte[]> getChunks() {
+        return chunks;
     }
 }

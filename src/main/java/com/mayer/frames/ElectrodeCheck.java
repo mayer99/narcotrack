@@ -4,14 +4,12 @@ import java.nio.ByteBuffer;
 
 public class ElectrodeCheck extends NarcotrackFrame {
 
-    private static final byte identifier = (byte)0xF4;
-    private static final int length = 28;
     private final float imp1a, imp1b, impRef, imp2a, imp2b;
     private final byte info;
     private final byte[] chkSum;
 
-    public ElectrodeCheck(int time, ByteBuffer buffer) {
-        super(time, NarcotrackFrames.ELECTRODE_CHECK);
+    public ElectrodeCheck(ByteBuffer buffer) {
+        super(NarcotrackFrames.ELECTRODE_CHECK);
         buffer.position(buffer.position() - length);
         buffer.get(raw);
         buffer.position(buffer.position() - length + 4);
@@ -54,5 +52,4 @@ public class ElectrodeCheck extends NarcotrackFrame {
     public byte[] getChkSum() {
         return chkSum;
     }
-
 }

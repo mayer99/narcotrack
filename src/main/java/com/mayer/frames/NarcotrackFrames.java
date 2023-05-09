@@ -1,5 +1,6 @@
 package com.mayer.frames;
 
+
 public enum NarcotrackFrames {
 
     EEG((byte)0xF1, 40),
@@ -22,4 +23,5 @@ public enum NarcotrackFrames {
     public int getLength() {
         return length;
     }
+
 }

@@ -11,15 +11,14 @@ import java.util.stream.Collectors;
 
 public class Narcotrack {
 
-    private static final Logger logger = LoggerFactory.getLogger(Narcotrack.class);
-    private static final String NARCOTRACK_SERIAL_DESCRIPTOR = System.getenv("NARCOTRACK_SERIAL_DESCRIPTOR");
+    private static final Logger LOGGER = LoggerFactory.getLogger(Narcotrack.class);
+
+    private final String narcotrackSerialDescriptor = System.getenv("NARCOTRACK_SERIAL_DESCRIPTOR");
 
     private SerialPort serialPort;
 
-
-
     private Narcotrack() {
-        logger.info("Application starting...");
+        LOGGER.info("Application starting...");
         openSerialConnection();
         openDatabaseConnection();
         Runtime.getRuntime().addShutdownHook(new SerialPortShutdownHook());
@@ -31,7 +30,7 @@ public class Narcotrack {
 
         @Override
         public void run() {
-            logger.error("Shutdown Hook triggered");
+            LOGGER.error("Shutdown Hook triggered");
             if (serialPort != null && serialPort.isOpen()) {
                 serialPort.closePort();
             }
@@ -47,31 +46,30 @@ public class Narcotrack {
 
         @Override
         public void serialEvent(SerialPortEvent event) {
-            logger.error("Listener noticed disconnect of serial port");
+            LOGGER.error("Listener noticed disconnect of serial port");
         }
     }
 
     private void openSerialConnection() {
-
-        if (NARCOTRACK_SERIAL_DESCRIPTOR == null || NARCOTRACK_SERIAL_DESCRIPTOR.isEmpty()) {
-            logger.error("Could not find serialPortDescriptor. Maybe, environment variables are not loaded?");
+        if (narcotrackSerialDescriptor == null || narcotrackSerialDescriptor.isEmpty()) {
+            LOGGER.error("Could not find serialPortDescriptor. Maybe, environment variables are not loaded?");
         }
         try {
-            logger.debug("Connecting to serial port using descriptor {}", NARCOTRACK_SERIAL_DESCRIPTOR);
-            serialPort = SerialPort.getCommPort(NARCOTRACK_SERIAL_DESCRIPTOR);
+            LOGGER.debug("Connecting to serial port using descriptor {}", narcotrackSerialDescriptor);
+            serialPort = SerialPort.getCommPort(narcotrackSerialDescriptor);
             serialPort.setBaudRate(115200);
             serialPort.setNumDataBits(8);
             serialPort.setParity(SerialPort.NO_PARITY);
             serialPort.setNumStopBits(SerialPort.ONE_STOP_BIT);
             serialPort.openPort();
-            logger.info("Connected to serial port");
+            LOGGER.info("Connected to serial port");
         } catch (Exception e) {
-            logger.error("Could not connect to serial port, serialPortDescriptor: {}", NARCOTRACK_SERIAL_DESCRIPTOR, e);
+            LOGGER.error("Could not connect to serial port, serialPortDescriptor: {}", narcotrackSerialDescriptor, e);
             try {
-                if (!Arrays.stream(SerialPort.getCommPorts()).anyMatch(serialPort -> serialPort.getSystemPortPath().equalsIgnoreCase(NARCOTRACK_SERIAL_DESCRIPTOR))) {
-                    logger.error("Port Descriptor {} does not match any of the available serial ports. Available ports are {}", NARCOTRACK_SERIAL_DESCRIPTOR, Arrays.stream(SerialPort.getCommPorts()).map(sp -> sp.getSystemPortPath()).collect(Collectors.joining(" ")));
+                if (!Arrays.stream(SerialPort.getCommPorts()).anyMatch(serialPort -> serialPort.getSystemPortPath().equalsIgnoreCase(narcotrackSerialDescriptor))) {
+                    LOGGER.error("Port Descriptor {} does not match any of the available serial ports. Available ports are {}", narcotrackSerialDescriptor, Arrays.stream(SerialPort.getCommPorts()).map(sp -> sp.getSystemPortPath()).collect(Collectors.joining(" ")));
                 } else {
-                    logger.error("Port Descriptor matches one of the available serial ports, but connection could not be opened");
+                    LOGGER.error("Port Descriptor matches one of the available serial ports, but connection could not be opened");
                 }
             } catch (Exception ex) {
 
