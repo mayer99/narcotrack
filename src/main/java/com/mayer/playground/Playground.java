@@ -42,16 +42,7 @@ public class Playground {
 
             i++;
             if (i >= 5) {
-                if (System.getenv("PLEASE_DO_NOT_RESTART") == null) {
-                    try {
-                        LOGGER.info("Trying shutdown");
-                        Runtime.getRuntime().exec("echo Hi2");
-                        Runtime.getRuntime().exec("sudo shutdown -r now");
-                    } catch (IOException e) {
-                        LOGGER.error("Cannot restart system", e);
-                        System.exit(1);
-                    }
-                }
+                LOGGER.info("Test");
             }
         }, 0, 2, TimeUnit.SECONDS);
 
