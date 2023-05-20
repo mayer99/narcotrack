@@ -52,4 +52,5 @@ public class ElectrodeCheck extends NarcotrackFrame {
     public byte[] getChkSum() {
         return chkSum;
     }
+
 }

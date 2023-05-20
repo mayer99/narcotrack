@@ -21,7 +21,7 @@ public class CurrentAssessment extends NarcotrackFrame {
     private final short stiCh1, stiCh2;
     private final float bsrShort2, bsrMedium2;
     private final short ibiCh1, ibiCh2;
-    private final float aEEGmin1, aEEGmax1, aEEGmin2, aEEGmax2;
+    private final float aEEGMin1, aEEGMax1, aEEGMin2, aEEGMax2;
     private final byte[] reserved2;
     private final byte[] chkSum;
 
@@ -50,8 +50,8 @@ public class CurrentAssessment extends NarcotrackFrame {
         buffer.get(artifacts1);
         artifacts2 = new byte[2];
         buffer.get(artifacts2);
-        info = new byte[2];
         alerts = buffer.get();
+        info = new byte[2];
         buffer.get(info);
         bsrShort1 = buffer.getFloat();
         bsrMedium1 = buffer.getFloat();
@@ -63,15 +63,16 @@ public class CurrentAssessment extends NarcotrackFrame {
         bsrMedium2 = buffer.getFloat();
         ibiCh1 = buffer.getShort();
         ibiCh2 = buffer.getShort();
-        aEEGmin1 = buffer.getFloat();
-        aEEGmax1 = buffer.getFloat();
-        aEEGmin2 = buffer.getFloat();
-        aEEGmax2 = buffer.getFloat();
+        aEEGMin1 = buffer.getFloat();
+        aEEGMax1 = buffer.getFloat();
+        aEEGMin2 = buffer.getFloat();
+        aEEGMax2 = buffer.getFloat();
         reserved2 = new byte[4];
         buffer.get(reserved2);
         chkSum = new byte[2];
         buffer.get(chkSum);
         // Resetting buffer position to start
+        System.out.println(length);
         buffer.position(buffer.position() + 1 - length);
     }
 
@@ -191,20 +192,20 @@ public class CurrentAssessment extends NarcotrackFrame {
         return this.ibiCh2;
     }
 
-    public float getaEEGmin1() {
-        return this.aEEGmin1;
+    public float getaEEGMin1() {
+        return this.aEEGMin1;
     }
 
-    public float getaEEGmax1() {
-        return this.aEEGmax1;
+    public float getaEEGMax1() {
+        return this.aEEGMax1;
     }
 
-    public float getaEEGmin2() {
-        return this.aEEGmin2;
+    public float getaEEGMin2() {
+        return this.aEEGMin2;
     }
 
-    public float getaEEGmax2() {
-        return this.aEEGmax2;
+    public float getaEEGMax2() {
+        return this.aEEGMax2;
     }
 
     public byte[] getReserved2() {

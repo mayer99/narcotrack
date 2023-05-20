@@ -1,5 +1,6 @@
 package com.mayer.logging;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.AppenderBase;
 import io.socket.client.IO;
@@ -12,14 +13,15 @@ import java.util.Collections;
 
 public class SocketAppender extends AppenderBase<ILoggingEvent> {
 
-    private final String narcotrackApiUrl = System.getenv("NARCOTRACK_API_URL");
-    private final String narcotrackApiToken = System.getenv("NARCOTRACK_API_TOKEN");
+    private int minimumLevel;
     private boolean active;
     private boolean guard;
     private Socket socket;
 
     public SocketAppender() {
 
+        String narcotrackApiUrl = System.getenv("NARCOTRACK_API_URL");
+        String narcotrackApiToken = System.getenv("NARCOTRACK_API_TOKEN");
         if (isNullEmptyOrWhitespace(narcotrackApiUrl) || isNullEmptyOrWhitespace(narcotrackApiToken)) {
             if (isNullEmptyOrWhitespace(narcotrackApiUrl)) addError("Could not start SocketAppender, because narcotrackApiUrl is null, empty or whitespace");
             if (isNullEmptyOrWhitespace(narcotrackApiToken)) addError("Could not start SocketAppender, because narcotrackApiToken is null, empty or whitespace");
@@ -28,6 +30,22 @@ public class SocketAppender extends AppenderBase<ILoggingEvent> {
         }
 
         try {
+            String narcotrackApiLevel = !isNullEmptyOrWhitespace(System.getenv(("NARCOTRACK_API_LOGLEVEL"))) ? System.getenv(("NARCOTRACK_API_LOGLEVEL")) : "INFO";
+            switch(narcotrackApiLevel) {
+                case "ERROR":
+                    minimumLevel = Level.ERROR.toInt();
+                    break;
+                case "WARN":
+                    minimumLevel = Level.WARN.toInt();
+                    break;
+                case "DEBUG":
+                    minimumLevel = Level.DEBUG.toInt();
+                    break;
+                case "INFO":
+                default:
+                    minimumLevel = Level.INFO.toInt();
+            }
+
             final URI uri = URI.create(narcotrackApiUrl);
             final IO.Options options = IO.Options.builder()
                     .setAuth(Collections.singletonMap("token", narcotrackApiToken))
@@ -44,7 +62,11 @@ public class SocketAppender extends AppenderBase<ILoggingEvent> {
     @Override
     protected void append(ILoggingEvent eventObject) {
 
-        if (guard == true || active == false) {
+        if (minimumLevel < 20000) {
+            return;
+        }
+
+        if (guard || !active) {
             return;
         }
 
@@ -59,7 +81,7 @@ public class SocketAppender extends AppenderBase<ILoggingEvent> {
                     .put("logger", eventObject.getLoggerName());
             socket.emit("log", eventData);
         } catch (JSONException e) {
-            addError("Unable to send log event", e);
+            addWarn("Unable to send log event", e);
         }
 
         guard = false;

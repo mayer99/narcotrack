@@ -3,7 +3,6 @@ package com.mayer.playground;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -34,17 +33,13 @@ public class Playground {
         //logger.info(System.getenv("TESTERERERER"));
 
 
-
+        long start = System.nanoTime();
         ScheduledExecutorService ses = Executors.newScheduledThreadPool(1);
         ScheduledFuture<?> scheduledFuture = ses.scheduleAtFixedRate(() -> {
 
-            LOGGER.info("Scheduled Future called");
+            LOGGER.info("Scheduled Future called. Time is {}", TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS));
 
-            i++;
-            if (i >= 5) {
-                LOGGER.info("Test");
-            }
-        }, 0, 2, TimeUnit.SECONDS);
+        }, 2, 2, TimeUnit.SECONDS);
 
     }
 }

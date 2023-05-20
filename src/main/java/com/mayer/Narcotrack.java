@@ -20,7 +20,6 @@ public class Narcotrack {
     private Narcotrack() {
         LOGGER.info("Application starting...");
         openSerialConnection();
-        openDatabaseConnection();
         Runtime.getRuntime().addShutdownHook(new SerialPortShutdownHook());
         serialPort.addDataListener(new NarcotrackListener());
         serialPort.addDataListener(new SerialPortDisconnectListener());
@@ -30,9 +29,10 @@ public class Narcotrack {
 
         @Override
         public void run() {
-            LOGGER.error("Shutdown Hook triggered");
+            LOGGER.warn("Shutdown Hook triggered, closing serial port");
             if (serialPort != null && serialPort.isOpen()) {
                 serialPort.closePort();
+                LOGGER.warn("Closed serial port");
             }
         }
     }
@@ -51,8 +51,9 @@ public class Narcotrack {
     }
 
     private void openSerialConnection() {
-        if (narcotrackSerialDescriptor == null || narcotrackSerialDescriptor.isEmpty()) {
+        if (narcotrackSerialDescriptor == null || narcotrackSerialDescriptor.trim().isEmpty()) {
             LOGGER.error("Could not find serialPortDescriptor. Maybe, environment variables are not loaded?");
+            System.exit(1);
         }
         try {
             LOGGER.debug("Connecting to serial port using descriptor {}", narcotrackSerialDescriptor);
@@ -66,20 +67,16 @@ public class Narcotrack {
         } catch (Exception e) {
             LOGGER.error("Could not connect to serial port, serialPortDescriptor: {}", narcotrackSerialDescriptor, e);
             try {
-                if (!Arrays.stream(SerialPort.getCommPorts()).anyMatch(serialPort -> serialPort.getSystemPortPath().equalsIgnoreCase(narcotrackSerialDescriptor))) {
+                if (Arrays.stream(SerialPort.getCommPorts()).noneMatch(serialPort -> serialPort.getSystemPortPath().equalsIgnoreCase(narcotrackSerialDescriptor))) {
                     LOGGER.error("Port Descriptor {} does not match any of the available serial ports. Available ports are {}", narcotrackSerialDescriptor, Arrays.stream(SerialPort.getCommPorts()).map(sp -> sp.getSystemPortPath()).collect(Collectors.joining(" ")));
                 } else {
                     LOGGER.error("Port Descriptor matches one of the available serial ports, but connection could not be opened");
                 }
             } catch (Exception ex) {
-
+                LOGGER.error("Could not create debug message showing CommPorts", ex);
             }
             System.exit(1);
         }
-    }
-
-    private void openDatabaseConnection() {
-
     }
 
     public static void main(String[] args) {
