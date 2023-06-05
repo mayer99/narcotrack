@@ -10,7 +10,7 @@ public class Playground1Event extends PlaygroundEvent {
         test.add(10);
         test.add(11);
         test.add(12);
-        System.out.println(test.toArray());
+        System.out.println(test);
     }
 
     @Override

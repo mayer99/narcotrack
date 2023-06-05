@@ -1,15 +1,17 @@
 package com.mayer.listeners;
 
-import com.mayer.event.NarcotrackEventHandler;
-import com.mayer.event.frame.CurrentAssessmentEvent;
-import com.mayer.event.frame.EEGEvent;
-import com.mayer.event.frame.ElectrodeCheckEvent;
-import com.mayer.event.frame.PowerSpectrumEvent;
-import com.mayer.event.remains.RemainsEvent;
+import com.mayer.events.NarcotrackEventHandler;
+import com.mayer.events.CurrentAssessmentEvent;
+import com.mayer.events.EEGEvent;
+import com.mayer.events.ElectrodeCheckEvent;
+import com.mayer.events.PowerSpectrumEvent;
+import com.mayer.events.RemainsEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 public class ElectrodeDisconnectedListener implements NarcotrackEventHandler {
@@ -43,28 +45,18 @@ public class ElectrodeDisconnectedListener implements NarcotrackEventHandler {
         }
     }
 
-
     @Override
     public void onElectrodeCheckEvent(ElectrodeCheckEvent event) {
-        if (isElectrodeDisconnected(event.getData().getImp1a())) {
-            LOGGER.warn("Received ElectrodeCheck with loose Imp1a Electrode ({})", event.getData().getImp1a());
-        }
-        if (isElectrodeDisconnected(event.getData().getImp1b())) {
-            LOGGER.warn("Received ElectrodeCheck with loose Imp1b Electrode ({})", event.getData().getImp1b());
-        }
-        if (isElectrodeDisconnected(event.getData().getImpRef())) {
-            LOGGER.warn("Received ElectrodeCheck with loose ImpRef Electrode ({})", event.getData().getImpRef());
-        }
-        if (isElectrodeDisconnected(event.getData().getImp2a())) {
-            LOGGER.warn("Received ElectrodeCheck with loose Imp2a Electrode ({})", event.getData().getImp2a());
-        }
-        if (isElectrodeDisconnected(event.getData().getImp2b())) {
-            LOGGER.warn("Received ElectrodeCheck with loose Imp2b Electrode ({})", event.getData().getImp2b());
-        }
+        HashMap<String, Float> impedances = new HashMap<>();
+        impedances.put("imp1a", event.getData().getImp1a());
+        impedances.put("imp1b", event.getData().getImp1b());
+        impedances.put("impRef", event.getData().getImpRef());
+        impedances.put("imp2a", event.getData().getImp2a());
+        impedances.put("imp2b", event.getData().getImp2b());
+        impedances.forEach((name, impedance) -> {
+            if (impedance >= 45 || impedance <= 0.05) {
+                LOGGER.warn("Received ElectrodeCheck with loose {} Electrode (impedance: {})", name, impedance);
+            }
+        });
     }
-
-    private boolean isElectrodeDisconnected(float impedance) {
-        return impedance >= 45 || impedance <= 1;
-    }
-
 }

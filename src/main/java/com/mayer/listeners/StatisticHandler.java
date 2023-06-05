@@ -1,12 +1,12 @@
 package com.mayer.listeners;
 
-import com.mayer.event.NarcotrackEventHandler;
-import com.mayer.event.frame.CurrentAssessmentEvent;
-import com.mayer.event.frame.EEGEvent;
-import com.mayer.event.frame.ElectrodeCheckEvent;
-import com.mayer.event.frame.PowerSpectrumEvent;
-import com.mayer.event.remains.RemainsEvent;
-import com.mayer.frames.NarcotrackFrames;
+import com.mayer.events.NarcotrackEventHandler;
+import com.mayer.events.CurrentAssessmentEvent;
+import com.mayer.events.EEGEvent;
+import com.mayer.events.ElectrodeCheckEvent;
+import com.mayer.events.PowerSpectrumEvent;
+import com.mayer.events.RemainsEvent;
+import com.mayer.NarcotrackFrames;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +25,7 @@ public class StatisticHandler implements NarcotrackEventHandler {
 
         LOGGER.info("starting...");
 
-        intervalDuration = 15;
+        intervalDuration = 30;
 
         ScheduledExecutorService ses = Executors.newScheduledThreadPool(1);
         ScheduledFuture<?> scheduledFuture = ses.scheduleAtFixedRate(() -> {

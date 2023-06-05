@@ -1,5 +1,7 @@
 package com.mayer.frames;
 
+import com.mayer.NarcotrackFrames;
+
 import java.nio.ByteBuffer;
 
 public class CurrentAssessment extends NarcotrackFrame {
@@ -72,7 +74,6 @@ public class CurrentAssessment extends NarcotrackFrame {
         chkSum = new byte[2];
         buffer.get(chkSum);
         // Resetting buffer position to start
-        System.out.println(length);
         buffer.position(buffer.position() + 1 - length);
     }
 

@@ -3,21 +3,17 @@ package com.mayer;
 import com.fazecast.jSerialComm.SerialPort;
 import com.fazecast.jSerialComm.SerialPortEvent;
 import com.fazecast.jSerialComm.SerialPortMessageListener;
-import com.mayer.event.frame.CurrentAssessmentEvent;
-import com.mayer.event.frame.EEGEvent;
-import com.mayer.event.frame.ElectrodeCheckEvent;
-import com.mayer.event.frame.PowerSpectrumEvent;
-import com.mayer.event.remains.RemainsEvent;
-import com.mayer.frames.NarcotrackFrames;
+import com.mayer.events.CurrentAssessmentEvent;
+import com.mayer.events.EEGEvent;
+import com.mayer.events.ElectrodeCheckEvent;
+import com.mayer.events.PowerSpectrumEvent;
+import com.mayer.events.RemainsEvent;
 import com.mayer.listeners.ElectrodeDisconnectedListener;
 import com.mayer.listeners.MariaDatabaseHandler;
 import com.mayer.listeners.StatisticHandler;
-import org.apache.commons.net.ntp.NTPUDPClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
@@ -48,11 +44,6 @@ public class NarcotrackListener implements SerialPortMessageListener {
         startTimeReference = System.nanoTime();
         LOGGER.info("startTime is {}, startTimeReference is {}", startTime, startTimeReference);
 
-        long startTimeNTP = getNTPTime();
-        if (startTimeNTP > 0 && Math.abs((startTime / 1000000) - startTimeNTP) > 10000) {
-            LOGGER.error("Difference between startTimeNTP and startTime is larger than 10s, battery probably empty");
-        }
-
         buffer = ByteBuffer.allocate(50000).order(ByteOrder.LITTLE_ENDIAN);
         shortestFrame = Arrays.stream(NarcotrackFrames.values()).min(Comparator.comparing(NarcotrackFrames::getLength)).orElse(NarcotrackFrames.ELECTRODE_CHECK);
 
@@ -68,19 +59,7 @@ public class NarcotrackListener implements SerialPortMessageListener {
             intervalsWithoutData++;
             LOGGER.warn("No data received for {}mins", intervalsWithoutData);
             if (intervalsWithoutData >= 5) {
-                LOGGER.error("Preparing reboot");
-                // Hier könnte man Spaß haben mit System restarts
-                if (System.getenv("PLEASE_DO_NOT_RESTART") != null) {
-                    LOGGER.info("Did not restart because of PLEASE_DO_NOT_RESTART");
-                    return;
-                }
-
-                try {
-                    Runtime.getRuntime().exec("sudo shutdown -r now");
-                } catch (IOException e) {
-                    LOGGER.error("Cannot restart system");
-                    System.exit(1);
-                }
+                Narcotrack.rebootPlatform();
             }
         }, checkSerialEventInterval, checkSerialEventInterval, TimeUnit.SECONDS);
 
@@ -156,50 +135,13 @@ public class NarcotrackListener implements SerialPortMessageListener {
             }
             return;
         }
-
-        if (buffer.position() > 0) {
-            LOGGER.debug("Received data than could not be matched to a handler. Buffer-Length is {}", buffer.position());
-        } else {
-            LOGGER.debug("Does this ever trigger because of the return?");
-        }
-    }
-
-    private long getNTPTime() {
-        NTPUDPClient client = new NTPUDPClient();
-        client.setDefaultTimeout(3000);
-        try {
-            client.open();
-            client.setSoTimeout(3000);
-            String[] ntpHosts = new String[]{"0.de.pool.ntp.org", "1.de.pool.ntp.org", "2.de.pool.ntp.org"};
-            // String[] ntpHosts = new String[]{"0.de.pool.ntp.org"};
-            for(String ntpHost: ntpHosts) {
-                try {
-                    InetAddress hostAddr = InetAddress.getByName(ntpHost);
-                    return client
-                            .getTime(hostAddr)
-                            .getMessage()
-                            .getTransmitTimeStamp()
-                            .getTime();
-                } catch (IOException e) {
-                    LOGGER.warn("Could not connect to ntp server {}", ntpHost);
-                }
-            }
-            return 0;
-        } catch (IOException e) {
-            LOGGER.error("Error creating NTPUDPClient", e);
-            return 0;
-        } finally {
-            if (client.isOpen()) {
-                client.close();
-            }
-        }
     }
 
     private int getTimeDifference() {
         try {
             return Math.toIntExact(TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTimeReference, TimeUnit.NANOSECONDS));
         } catch(Exception e) {
-            LOGGER.error("Could not getTimeDifference(). startTimeReference was {} (ns) and currentTime is {} (ns). currentTime is not 100% accurate",System.nanoTime(), startTimeReference, e);
+            LOGGER.error("Could not getTimeDifference(). startTimeReference was {} (ns) and currentTime is {} (ns). currentTime is not 100% accurate, Exception Message: {}",System.nanoTime(), startTimeReference, e.getMessage(), e);
             return -1;
         }
     }

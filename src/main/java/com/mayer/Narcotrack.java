@@ -6,6 +6,7 @@ import com.fazecast.jSerialComm.SerialPortEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
@@ -21,8 +22,8 @@ public class Narcotrack {
         LOGGER.info("Application starting...");
         openSerialConnection();
         Runtime.getRuntime().addShutdownHook(new SerialPortShutdownHook());
-        serialPort.addDataListener(new NarcotrackListener());
         serialPort.addDataListener(new SerialPortDisconnectListener());
+        serialPort.addDataListener(new NarcotrackListener());
     }
 
     class SerialPortShutdownHook extends Thread {
@@ -32,7 +33,7 @@ public class Narcotrack {
             LOGGER.warn("Shutdown Hook triggered, closing serial port");
             if (serialPort != null && serialPort.isOpen()) {
                 serialPort.closePort();
-                LOGGER.warn("Closed serial port");
+                LOGGER.info("Closed serial port");
             }
         }
     }
@@ -53,7 +54,7 @@ public class Narcotrack {
     private void openSerialConnection() {
         if (narcotrackSerialDescriptor == null || narcotrackSerialDescriptor.trim().isEmpty()) {
             LOGGER.error("Could not find serialPortDescriptor. Maybe, environment variables are not loaded?");
-            System.exit(1);
+            rebootPlatform();
         }
         try {
             LOGGER.debug("Connecting to serial port using descriptor {}", narcotrackSerialDescriptor);
@@ -65,7 +66,7 @@ public class Narcotrack {
             serialPort.openPort();
             LOGGER.info("Connected to serial port");
         } catch (Exception e) {
-            LOGGER.error("Could not connect to serial port, serialPortDescriptor: {}", narcotrackSerialDescriptor, e);
+            LOGGER.error("Could not connect to serial port, serialPortDescriptor: {}, Exception Message: {}", narcotrackSerialDescriptor, e.getMessage(), e);
             try {
                 if (Arrays.stream(SerialPort.getCommPorts()).noneMatch(serialPort -> serialPort.getSystemPortPath().equalsIgnoreCase(narcotrackSerialDescriptor))) {
                     LOGGER.error("Port Descriptor {} does not match any of the available serial ports. Available ports are {}", narcotrackSerialDescriptor, Arrays.stream(SerialPort.getCommPorts()).map(sp -> sp.getSystemPortPath()).collect(Collectors.joining(" ")));
@@ -73,8 +74,22 @@ public class Narcotrack {
                     LOGGER.error("Port Descriptor matches one of the available serial ports, but connection could not be opened");
                 }
             } catch (Exception ex) {
-                LOGGER.error("Could not create debug message showing CommPorts", ex);
+                LOGGER.error("Could not create debug message showing CommPorts, Exception Message: {}", ex.getMessage(), ex);
             }
+            rebootPlatform();
+        }
+    }
+
+    public static void rebootPlatform() {
+        LOGGER.error("Preparing reboot");
+        if (System.getenv("PLEASE_DO_NOT_RESTART") != null) {
+            LOGGER.info("Did not restart because of PLEASE_DO_NOT_RESTART");
+            return;
+        }
+        try {
+            Runtime.getRuntime().exec("sudo shutdown -r now");
+        } catch (IOException e) {
+            LOGGER.error("Cannot restart system. Error message: {}", e.getMessage(), e);
             System.exit(1);
         }
     }

@@ -1,5 +1,7 @@
 package com.mayer.frames;
 
+import com.mayer.NarcotrackFrames;
+
 import java.nio.ByteBuffer;
 
 public class ElectrodeCheck extends NarcotrackFrame {

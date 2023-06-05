@@ -1,16 +1,17 @@
 package com.mayer.listeners;
 
+import com.mayer.Narcotrack;
 import com.mayer.NarcotrackListener;
-import com.mayer.event.NarcotrackEventHandler;
-import com.mayer.event.frame.CurrentAssessmentEvent;
-import com.mayer.event.frame.EEGEvent;
-import com.mayer.event.frame.ElectrodeCheckEvent;
-import com.mayer.event.frame.PowerSpectrumEvent;
-import com.mayer.event.remains.RemainsEvent;
+import com.mayer.events.NarcotrackEventHandler;
+import com.mayer.events.CurrentAssessmentEvent;
+import com.mayer.events.EEGEvent;
+import com.mayer.events.ElectrodeCheckEvent;
+import com.mayer.events.PowerSpectrumEvent;
+import com.mayer.events.RemainsEvent;
 import com.mayer.frames.CurrentAssessment;
 import com.mayer.frames.ElectrodeCheck;
 import com.mayer.frames.PowerSpectrum;
-import com.mayer.frames.Remains;
+import com.mayer.Remains;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,8 +51,8 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
 
             createRecording();
         } catch (Exception e) {
-            LOGGER.error("Error creating connection, creating prepared statements or insert recording", e);
-            System.exit(1);
+            LOGGER.error("Error creating connection, creating prepared statements or insert recording, Exception Message: {}", e.getMessage(), e);
+            Narcotrack.rebootPlatform();
         }
 
         EEGEvent.getEventHandlers().add(this);
@@ -62,15 +63,15 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
     }
 
     class DatabaseShutdownHook extends Thread {
-
         public void run() {
+            LOGGER.warn("Shutting down database");
             try {
                 if (databaseConnection != null && !databaseConnection.isClosed()) {
                     databaseConnection.close();
                     LOGGER.info("Closed DB connection");
                 }
             } catch (SQLException e) {
-                LOGGER.error("Error closing database connection", e);
+                LOGGER.error("Error closing database connection, Exception Message: {}", e.getMessage(), e);
             }
         }
     }
@@ -79,12 +80,12 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
         recordingsStatement.setTimestamp(1, new Timestamp(narcotrackListener.getStartTime()));
         if(recordingsStatement.executeUpdate() < 1) {
             LOGGER.error("Could not insert recording, got no rows back");
-            System.exit(1);
+            Narcotrack.rebootPlatform();
         }
         ResultSet rs = recordingsStatement.getGeneratedKeys();
         if(!rs.next()) {
             LOGGER.error("Insert of recording did not return an id key");
-            System.exit(1);
+            Narcotrack.rebootPlatform();
         }
         recordId = rs.getInt(1);
         // recordId = rs.getInt("insert_id");
@@ -110,12 +111,12 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
                 LOGGER.debug("Sent EEG batch");
             }
         } catch (SQLException e) {
-            LOGGER.error("Error processing EEG data", e);
+            LOGGER.error("Error processing EEG data, Exception Message: {}", e.getMessage(), e);
             try {
                 eegStatement.clearBatch();
                 eegBatchCounter = 0;
             } catch (SQLException ex) {
-                LOGGER.error("Could not clear EEG Batch", ex);
+                LOGGER.error("Could not clear EEG Batch, Exception Message: {}", ex.getMessage(), ex);
             }
         }
 
@@ -174,12 +175,12 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
                 LOGGER.debug("Sent Current Assessment batch");
             }
         } catch (SQLException e) {
-            LOGGER.error("Error processing Current Assessment data", e);
+            LOGGER.error("Error processing Current Assessment data, Exception Message: {}", e.getMessage(), e);
             try {
                 currentAssessmentStatement.clearBatch();
                 currentAssessmentBatchCounter = 0;
             } catch (SQLException ex) {
-                LOGGER.error("Could not clear currentAssessment Batch", ex);
+                LOGGER.error("Could not clear currentAssessment Batch, Exception Message: {}", ex.getMessage(), ex);
             }
         }
     }
@@ -209,7 +210,7 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
             }
             LOGGER.debug("Sent Power Spectrum");
         } catch (SQLException e) {
-            LOGGER.error("Error processing Power Spectrum data", e);
+            LOGGER.error("Error processing Power Spectrum data, Exception Message: {}", e.getMessage(), e);
         }
 
     }
@@ -244,7 +245,7 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
             electrodeCheckStatement.executeUpdate();
             LOGGER.debug("Sent Electrode Check");
         } catch (SQLException e) {
-            LOGGER.error("Error processing Electrode Check data", e);
+            LOGGER.error("Error processing Electrode Check data, Exception Message: {}", e.getMessage(), e);
         }
 
     }
@@ -269,7 +270,7 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
                 LOGGER.debug("Sent Remains");
             }
         } catch (SQLException e) {
-            LOGGER.error("Error processing Remains data", e);
+            LOGGER.error("Error processing Remains data, Exception Message: {}", e.getMessage(), e);
         }
     }
 }

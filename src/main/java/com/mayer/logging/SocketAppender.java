@@ -46,8 +46,8 @@ public class SocketAppender extends AppenderBase<ILoggingEvent> {
                     minimumLevel = Level.INFO.toInt();
             }
 
-            final URI uri = URI.create(narcotrackApiUrl);
-            final IO.Options options = IO.Options.builder()
+            URI uri = URI.create(narcotrackApiUrl);
+            IO.Options options = IO.Options.builder()
                     .setAuth(Collections.singletonMap("token", narcotrackApiToken))
                     .build();
             socket = IO.socket(uri, options);
@@ -62,7 +62,7 @@ public class SocketAppender extends AppenderBase<ILoggingEvent> {
     @Override
     protected void append(ILoggingEvent eventObject) {
 
-        if (minimumLevel < 20000) {
+        if (minimumLevel > eventObject.getLevel().toInt()) {
             return;
         }
 

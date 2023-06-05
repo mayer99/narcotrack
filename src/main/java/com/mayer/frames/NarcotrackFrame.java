@@ -1,5 +1,7 @@
 package com.mayer.frames;
 
+import com.mayer.NarcotrackFrames;
+
 public abstract class NarcotrackFrame {
 
     protected final int length;
@@ -12,7 +14,6 @@ public abstract class NarcotrackFrame {
 
     public byte[] getRaw() {
         return raw;
-
     }
 
 }

@@ -3,6 +3,9 @@ package com.mayer.playground;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -37,7 +40,13 @@ public class Playground {
         ScheduledExecutorService ses = Executors.newScheduledThreadPool(1);
         ScheduledFuture<?> scheduledFuture = ses.scheduleAtFixedRate(() -> {
 
-            LOGGER.info("Scheduled Future called. Time is {}", TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS));
+            try {
+                Connection databaseConnection = DriverManager.getConnection("jdbc:mariadb://mayer.local");
+            } catch (SQLException e) {
+                LOGGER.error("PRoblem, Exception Message: {}", e.getMessage(), e);
+            }
+
+            //LOGGER.info("Scheduled Future called. Time is {}", TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS));
 
         }, 2, 2, TimeUnit.SECONDS);
 
