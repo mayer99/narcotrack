@@ -22,7 +22,7 @@ public class Narcotrack {
         LOGGER.info("Application starting...");
         openSerialConnection();
         Runtime.getRuntime().addShutdownHook(new SerialPortShutdownHook());
-        serialPort.addDataListener(new SerialPortDisconnectListener());
+        // JSerial only accepts ONE DataListener?!
         serialPort.addDataListener(new NarcotrackListener());
     }
 

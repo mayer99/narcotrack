@@ -66,6 +66,7 @@ public class NarcotrackListener implements SerialPortMessageListener {
         StatisticHandler statisticHandler = new StatisticHandler();
         MariaDatabaseHandler mariaDatabaseHandler = new MariaDatabaseHandler(this);
         ElectrodeDisconnectedListener electrodeDisconnectedListener = new ElectrodeDisconnectedListener();
+        LOGGER.info("Initialization of NarcotrackListener completed");
     }
 
     @Override

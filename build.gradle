@@ -55,7 +55,7 @@ task deployPlayground(type: Jar) {
     doLast {
         ssh.run {
             session(remotes.pi) {
-                put from: file('build/libs/Narcotrack-1.0-SNAPSHOT.jar'), into: '/home/pi/Narcotrack'
+                put from: file('build/libs/Narcotrack-1.0-SNAPSHOT.jar'), into: '/home/pi/narcotrack'
             }
 
         }
