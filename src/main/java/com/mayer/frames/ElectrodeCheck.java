@@ -11,10 +11,8 @@ public class ElectrodeCheck extends NarcotrackFrame {
     private final byte[] chkSum;
 
     public ElectrodeCheck(ByteBuffer buffer) {
-        super(NarcotrackFrames.ELECTRODE_CHECK);
-        buffer.position(buffer.position() - length);
-        buffer.get(raw);
-        buffer.position(buffer.position() - length + 4);
+        super(NarcotrackFrames.ELECTRODE_CHECK, buffer);
+        buffer.position(buffer.position() + 4);
         imp1a = buffer.getFloat();
         imp1b = buffer.getFloat();
         impRef = buffer.getFloat();
@@ -24,7 +22,7 @@ public class ElectrodeCheck extends NarcotrackFrame {
         chkSum = new byte[2];
         buffer.get(chkSum);
         // Resetting buffer position to start
-        buffer.position(buffer.position() + 1 - length);
+        buffer.position(buffer.position() + 1);
     }
 
     public float getImp1a() {

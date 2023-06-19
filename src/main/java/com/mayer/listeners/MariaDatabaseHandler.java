@@ -1,7 +1,6 @@
 package com.mayer.listeners;
 
 import com.mayer.Narcotrack;
-import com.mayer.NarcotrackListener;
 import com.mayer.events.NarcotrackEventHandler;
 import com.mayer.events.CurrentAssessmentEvent;
 import com.mayer.events.EEGEvent;
@@ -26,15 +25,15 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
     private final String NARCOTRACK_DB_TABLE = System.getenv("NARCOTRACK_DB_TABLE");
     private final String NARCOTRACK_DB_USERNAME = System.getenv("NARCOTRACK_DB_USERNAME");
     private final String NARCOTRACK_DB_PASSWORD = System.getenv("NARCOTRACK_DB_PASSWORD");
-    private final NarcotrackListener narcotrackListener;
+    private final Narcotrack narcotrack;
     private Connection databaseConnection;
     private int recordId;
     private PreparedStatement recordingsStatement, eegStatement, currentAssessmentStatement, powerSpectrumStatement, spectrumStatement, electrodeCheckStatement, remainsStatement;
     private int eegBatchCounter = 0, currentAssessmentBatchCounter = 0;
     private final int eegBatchMax = 32, currentAssessmentBatchMax = 2;
 
-    public MariaDatabaseHandler(NarcotrackListener narcotrackListener) {
-        this.narcotrackListener = narcotrackListener;
+    public MariaDatabaseHandler(Narcotrack narcotrack) {
+        this.narcotrack = narcotrack;
 
         try {
             LOGGER.debug("Connecting to database {}", NARCOTRACK_DB_URL);
@@ -77,7 +76,7 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
     }
 
     public void createRecording() throws SQLException {
-        recordingsStatement.setTimestamp(1, new Timestamp(narcotrackListener.getStartTime()));
+        recordingsStatement.setTimestamp(1, new Timestamp(narcotrack.getStartTime()));
         if(recordingsStatement.executeUpdate() < 1) {
             LOGGER.error("Could not insert recording, got no rows back");
             Narcotrack.rebootPlatform();
