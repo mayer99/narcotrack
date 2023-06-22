@@ -19,21 +19,22 @@ public class StatisticHandler implements NarcotrackEventHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StatisticHandler.class);
 
-    private final int intervalDuration;
+    private final int INTERVAL_DURATION = 30;
 
     public StatisticHandler() {
-
         LOGGER.info("starting...");
-
-        intervalDuration = 30;
 
         ScheduledExecutorService ses = Executors.newScheduledThreadPool(1);
         ScheduledFuture<?> scheduledFuture = ses.scheduleAtFixedRate(() -> {
-            LOGGER.info("Statistics for the last {}s:\nEEGs: {} ({}/s)\nCurrentAssessments: {} ({}/s)\nPowerSpectrums: {}\nElectrodeChecks: {}", intervalDuration, NarcotrackFrames.EEG.getCount(), (NarcotrackFrames.EEG.getCount() / intervalDuration), NarcotrackFrames.CURRENT_ASSESSMENT.getCount(), (NarcotrackFrames.CURRENT_ASSESSMENT.getCount() / intervalDuration), NarcotrackFrames.POWER_SPECTRUM.getCount(), NarcotrackFrames.ELECTRODE_CHECK.getCount());
+            LOGGER.info("Statistics for the last {}s", INTERVAL_DURATION);
+            LOGGER.info("EEGs: {} ({}/s)", NarcotrackFrames.EEG.getCount(), (NarcotrackFrames.EEG.getCount() / INTERVAL_DURATION));
+            LOGGER.info("CurrentAssessments: {} ({}/s)", NarcotrackFrames.CURRENT_ASSESSMENT.getCount(), (NarcotrackFrames.CURRENT_ASSESSMENT.getCount() / INTERVAL_DURATION));
+            LOGGER.info("PowerSpectrums: {}", NarcotrackFrames.POWER_SPECTRUM.getCount());
+            LOGGER.info("ElectrodeChecks: {}", NarcotrackFrames.ELECTRODE_CHECK.getCount());
             for (NarcotrackFrames frame: NarcotrackFrames.values()) {
                 frame.resetCounter();
             }
-        }, intervalDuration, intervalDuration, TimeUnit.SECONDS);
+        }, INTERVAL_DURATION, INTERVAL_DURATION, TimeUnit.SECONDS);
         EEGEvent.getEventHandlers().add(this);
         CurrentAssessmentEvent.getEventHandlers().add(this);
         PowerSpectrumEvent.getEventHandlers().add(this);
@@ -64,6 +65,6 @@ public class StatisticHandler implements NarcotrackEventHandler {
 
     @Override
     public void onRemainsEvent(RemainsEvent event) {
-        LOGGER.warn("Received remains of length {}", event.getData().getChunks().size());
+        LOGGER.warn("Remains with {} chunks, time: {}", event.getData().getChunks().size(), event.getTime());
     }
 }

@@ -40,8 +40,8 @@ public class Narcotrack {
     private final NarcotrackFrames shortestFrame;
     private final Instant startTime;
     private final long startTimeReference;
-    private final String dataFileName;
-    private final Path dataFilePath;
+    private final String backupFileName;
+    private final Path backupFilePath;
     private int intervalsWithoutData = 0;
 
     private Narcotrack() {
@@ -49,9 +49,9 @@ public class Narcotrack {
         startTime = Instant.now();
         startTimeReference = System.nanoTime();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
-        dataFileName = sdf.format(Date.from(startTime)) + ".bin";
-        dataFilePath = Paths.get("data", dataFileName);
-        LOGGER.info("startTime is {}, startTimeReference is {}, Date file is called: {}", startTime.getEpochSecond(), startTimeReference, dataFileName);
+        backupFileName = sdf.format(Date.from(startTime)) + ".bin";
+        backupFilePath = Paths.get("backup", backupFileName);
+        LOGGER.info("startTime: {}, startTimeReference: {}, backupFile: {}", startTime.getEpochSecond(), startTimeReference, backupFileName);
         shortestFrame = Arrays.stream(NarcotrackFrames.values()).min(Comparator.comparing(NarcotrackFrames::getLength)).orElse(NarcotrackFrames.ELECTRODE_CHECK);
         buffer = ByteBuffer.allocate(50000).order(ByteOrder.LITTLE_ENDIAN);
 
@@ -106,15 +106,6 @@ public class Narcotrack {
         new Narcotrack();
     }
 
-    private int getTimeDifference() {
-        try {
-            return Math.toIntExact(TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTimeReference, TimeUnit.NANOSECONDS));
-        } catch(Exception e) {
-            LOGGER.error("Could not getTimeDifference(). startTimeReference was {} (ns) and currentTime is {} (ns). currentTime is not 100% accurate, Exception Message: {}",System.nanoTime(), startTimeReference, e.getMessage(), e);
-            return -1;
-        }
-    }
-
     public Instant getStartTime() {
         return startTime;
     }
@@ -157,6 +148,7 @@ public class Narcotrack {
         ScheduledFuture<?> scheduledFuture = ses.scheduleAtFixedRate(() -> {
             // Wartet scheduledFuture auf den vorherigen Durchlauf? Sonst könnte es eine Race Condition geben, wenn mal die DB timeoutet (Alternativ unwahrscheinlicher, wenn diese Aufgaben async ablaufen)
             int bytesAvailable = serialPort.bytesAvailable();
+            LOGGER.info("{} bytes available", bytesAvailable);
             if (bytesAvailable == 0) {
                 intervalsWithoutData++;
                 if (intervalsWithoutData%60 == 0) {
@@ -168,6 +160,16 @@ public class Narcotrack {
                 return;
             }
             intervalsWithoutData = 0;
+            int time;
+            try {
+                time = Math.toIntExact(TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - startTimeReference));
+            } catch(Exception e) {
+                LOGGER.error("Could not calculate timeDifference. startTimeReference was {} (ns) and currentTime is {} (ns). currentTime is not 100% accurate, Exception Message: {}",System.nanoTime(), startTimeReference, e.getMessage(), e);
+                time = -1;
+            }
+            // PaketID in der Aufzeichnung
+            // PaketID in der Sekunde
+            // PaketCounter der Sekunde
 
             if (bytesAvailable + buffer.position() > buffer.capacity()) {
                 // buffer.position() ist 1 größer als der tatsächliche Füllzustand des Buffers. buffer.capacity() entspricht exakt der Größe.
@@ -175,24 +177,28 @@ public class Narcotrack {
                 // Angenommen cap wäre 10, enthalten sind 5 (dadurch buffer.position() -> 5) und 6 bytesAvailable => 11 > 10 -> abgelehnt
                 LOGGER.warn("bytesAvailable would overfill the remaining buffer space. Moving existing bytes in buffer to remains (bytesAvailable: {}, buffer.position(): {}, buffer.capacity(): {}).", bytesAvailable, buffer.position(), buffer.capacity());
                 // Move Buffer to remains!
-                new RemainsEvent(getTimeDifference(), buffer);
+                new RemainsEvent(time, buffer);
+                buffer.clear();
                 if (bytesAvailable > buffer.capacity()) {
                     LOGGER.warn("bytesAvailable would overfill the entire buffer space. Moving bytesAvailable to remains");
                     // Move bytesAvailable to remains
                     byte[] data = new byte[bytesAvailable];
                     serialPort.readBytes(data, data.length);
                     saveBytesToBackupFile(data);
-                    new RemainsEvent(getTimeDifference(), data);
+                    new RemainsEvent(time, data);
                     return;
                 }
             }
             byte[] data = new byte[bytesAvailable];
-            serialPort.readBytes(data, data.length); // Ist das überhaupt nötig?
+            serialPort.readBytes(data, data.length);
             saveBytesToBackupFile(data);
             buffer.put(data);
             int lastPosition = buffer.position();
             buffer.position(0);
-            for (int i = 0; i <= lastPosition; i++) {
+            for(int i = 0; i < lastPosition; i++) {
+                // lastPosition ist 5, da 5 bytes gespeichert sind [0, 4]
+                // i braucht byte 5 nicht anfragen, da er nicht relevant ist
+                // i < lastPosition statt <=, da sonst ein irrelevanter Index mitgenommen wird
                 if (i + shortestFrame.getLength() > lastPosition) {
                     // Wenn buffer mit 12 bytes gefüllt -> buffer.position(): 12; shortestFrame: 10; i = 0; i++
                     // i: 0; 10 >! 12; verfügbare Bytes: 12
@@ -227,21 +233,21 @@ public class Narcotrack {
                             // buffer.position: 3; i: 6 => byte[3, 5] ist remains
                             byte[] remains = new byte[i - buffer.position()];
                             buffer.get(remains);
-                            new RemainsEvent(getTimeDifference(), remains);
+                            new RemainsEvent(time, remains);
                         }
                         buffer.position(i);
                         switch (frame) {
                             case EEG:
-                                new EEGEvent(getTimeDifference(), buffer);
+                                new EEGEvent(time, buffer);
                                 break;
                             case CURRENT_ASSESSMENT:
-                                new CurrentAssessmentEvent(getTimeDifference(), buffer);
+                                new CurrentAssessmentEvent(time, buffer);
                                 break;
                             case POWER_SPECTRUM:
-                                new PowerSpectrumEvent(getTimeDifference(), buffer);
+                                new PowerSpectrumEvent(time, buffer);
                                 break;
                             case ELECTRODE_CHECK:
-                                new ElectrodeCheckEvent(getTimeDifference(), buffer);
+                                new ElectrodeCheckEvent(time, buffer);
                                 break;
                         }
                         // Paket der Länge 5 beginnt bei 0 (byte[0,4]) und wird nur von [0,2] gelesen. Soll eigentlich bei
@@ -257,12 +263,23 @@ public class Narcotrack {
                     }
                 }
             }
+            if (lastPosition > buffer.position()) {
+                // lastPosition: 7 für 7 bytes, buffer.position auf 5 [0,4] gesammelt
+                // 2 byte fehlen => 7 - 5
+                byte[] endFragment = new byte[lastPosition - buffer.position()];
+                buffer.get(endFragment);
+                LOGGER.info("After endFragment: lastPosition: {}, buffer: {}", lastPosition, buffer.position());
+                buffer.clear();
+                buffer.put(endFragment);
+            } else {
+                buffer.clear();
+            }
         }, 1, 1, TimeUnit.SECONDS);
     }
 
     private void saveBytesToBackupFile(byte[] data) {
         try {
-            Files.write(dataFilePath, data, StandardOpenOption.APPEND);
+            Files.write(backupFilePath, data, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         } catch (IOException e) {
             LOGGER.error("saveBytesToBackupFile failed. Exception message: {}", e.getMessage(), e);
         }

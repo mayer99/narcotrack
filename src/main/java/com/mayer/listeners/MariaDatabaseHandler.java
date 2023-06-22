@@ -234,11 +234,11 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
             final ElectrodeCheck data = event.getData();
             electrodeCheckStatement.setInt(1, recordId);
             electrodeCheckStatement.setInt(2, event.getTime());
-            electrodeCheckStatement.setFloat(3, data.getImp1a());
-            electrodeCheckStatement.setFloat(4, data.getImp1b());
-            electrodeCheckStatement.setFloat(5, data.getImpRef());
-            electrodeCheckStatement.setFloat(6, data.getImp2a());
-            electrodeCheckStatement.setFloat(7, data.getImp2b());
+            electrodeCheckStatement.setFloat(3, adjustImpedance(data.getImp1a()));
+            electrodeCheckStatement.setFloat(4, adjustImpedance(data.getImp1b()));
+            electrodeCheckStatement.setFloat(5, adjustImpedance(data.getImpRef()));
+            electrodeCheckStatement.setFloat(6, adjustImpedance(data.getImp2a()));
+            electrodeCheckStatement.setFloat(7, adjustImpedance(data.getImp2b()));
             electrodeCheckStatement.setByte(8, data.getInfo());
             electrodeCheckStatement.setBytes(9, data.getChkSum());
             electrodeCheckStatement.setBytes(10, data.getRaw());
@@ -247,7 +247,14 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
         } catch (SQLException e) {
             LOGGER.error("Error processing Electrode Check data, Exception Message: {}", e.getMessage(), e);
         }
+    }
 
+    private float adjustImpedance(float impedance) {
+        if (Float.isInfinite(impedance) || Float.isNaN(impedance)) {
+            LOGGER.warn("Received impedance that is infinite or NaN");
+            return -1;
+        }
+        return impedance;
     }
 
     @Override

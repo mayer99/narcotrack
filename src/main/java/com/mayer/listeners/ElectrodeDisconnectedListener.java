@@ -54,9 +54,10 @@ public class ElectrodeDisconnectedListener implements NarcotrackEventHandler {
         impedances.put("imp2a", event.getData().getImp2a());
         impedances.put("imp2b", event.getData().getImp2b());
         impedances.forEach((name, impedance) -> {
-            if (impedance >= 45 || impedance <= 0.05) {
+            if (impedance >= 45) {
                 LOGGER.warn("Received ElectrodeCheck with loose {} Electrode (impedance: {})", name, impedance);
             }
+            LOGGER.info("{}: {}", name, impedance);
         });
     }
 }
