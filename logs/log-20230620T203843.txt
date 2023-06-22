@@ -1,0 +1,2 @@
+com.mayer.playground.Playground -- Buffer position before adding data 0, data: [B@78ffe6dc
+com.mayer.playground.Playground -- Buffer position after adding data 5

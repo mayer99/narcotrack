@@ -13,8 +13,15 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -31,129 +38,29 @@ public class Narcotrack {
     private final byte endByte = (byte)0xFE;
     private final ByteBuffer buffer;
     private final NarcotrackFrames shortestFrame;
-    private final long startTime;
+    private final Instant startTime;
     private final long startTimeReference;
+    private final String dataFileName;
+    private final Path dataFilePath;
     private int intervalsWithoutData = 0;
 
     private Narcotrack() {
         LOGGER.info("Application starting...");
-        startTime = System.currentTimeMillis();
+        startTime = Instant.now();
         startTimeReference = System.nanoTime();
-        LOGGER.info("startTime is {}, startTimeReference is {}", startTime, startTimeReference);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
+        dataFileName = sdf.format(Date.from(startTime)) + ".bin";
+        dataFilePath = Paths.get("data", dataFileName);
+        LOGGER.info("startTime is {}, startTimeReference is {}, Date file is called: {}", startTime.getEpochSecond(), startTimeReference, dataFileName);
         shortestFrame = Arrays.stream(NarcotrackFrames.values()).min(Comparator.comparing(NarcotrackFrames::getLength)).orElse(NarcotrackFrames.ELECTRODE_CHECK);
         buffer = ByteBuffer.allocate(50000).order(ByteOrder.LITTLE_ENDIAN);
-        if (narcotrackSerialDescriptor == null || narcotrackSerialDescriptor.trim().isEmpty()) {
-            LOGGER.error("Could not find serialPortDescriptor. Maybe, environment variables are not loaded?");
-            rebootPlatform();
-            return;
-        }
-        try {
-            LOGGER.debug("Connecting to serial port using descriptor {}", narcotrackSerialDescriptor);
-            serialPort = SerialPort.getCommPort(narcotrackSerialDescriptor);
-            serialPort.setBaudRate(115200);
-            serialPort.setNumDataBits(8);
-            serialPort.setParity(SerialPort.NO_PARITY);
-            serialPort.setNumStopBits(SerialPort.ONE_STOP_BIT);
-            serialPort.openPort();
-            LOGGER.info("Connected to serial port");
-        } catch (Exception e) {
-            LOGGER.error("Could not connect to serial port, serialPortDescriptor: {}, Exception Message: {}", narcotrackSerialDescriptor, e.getMessage(), e);
-            try {
-                if (Arrays.stream(SerialPort.getCommPorts()).noneMatch(serialPort -> serialPort.getSystemPortPath().equalsIgnoreCase(narcotrackSerialDescriptor))) {
-                    LOGGER.error("Port Descriptor {} does not match any of the available serial ports. Available ports are {}", narcotrackSerialDescriptor, Arrays.stream(SerialPort.getCommPorts()).map(sp -> sp.getSystemPortPath()).collect(Collectors.joining(" ")));
-                } else {
-                    LOGGER.error("Port Descriptor matches one of the available serial ports, but connection could not be opened");
-                }
-            } catch (Exception ex) {
-                LOGGER.error("Could not create debug message showing CommPorts, Exception Message: {}", ex.getMessage(), ex);
-            }
-            rebootPlatform();
-        }
-        Runtime.getRuntime().addShutdownHook(new SerialPortShutdownHook());
-        // JSerial only accepts ONE DataListener?!
-        //serialPort.addDataListener(new SerialPortDisconnectListener());
 
-        ScheduledExecutorService ses = Executors.newScheduledThreadPool(1);
-        ScheduledFuture<?> scheduledFuture = ses.scheduleAtFixedRate(() -> {
-            // Wartet scheduledFuture auf den vorherigen Durchlauf? Sonst könnte es eine Race Condition geben, wenn mal die DB timeoutet (Alternativ unwahrscheinlicher, wenn diese Aufgaben async ablaufen)
-            int bytesAvailable = serialPort.bytesAvailable();
-            if (bytesAvailable == 0) {
-                intervalsWithoutData++;
-                if (intervalsWithoutData%60 == 0) {
-                    LOGGER.warn("No data received for {}mins", intervalsWithoutData);
-                    if (intervalsWithoutData >= 300) {
-                        Narcotrack.rebootPlatform();
-                    }
-                }
-                return;
-            }
-            intervalsWithoutData = 0;
-
-            if (bytesAvailable + buffer.position() > buffer.capacity()) {
-                LOGGER.warn("bytesAvailable would overfill the remaining buffer space. Moving existing bytes in buffer to remains (bytesAvailable: {}, buffer.position(): {}, buffer.capacity(): {}).", bytesAvailable, buffer.position(), buffer.capacity());
-                // Move Buffer to remains!
-                new RemainsEvent(getTimeDifference(), buffer);
-                if (bytesAvailable > buffer.capacity()) {
-                    LOGGER.warn("bytesAvailable would overfill the entire buffer space. Moving bytesAvailable to remains");
-                    // Move bytesAvailable to remains
-                    byte[] data = new byte[bytesAvailable];
-                    serialPort.readBytes(data, data.length);
-                    new RemainsEvent(getTimeDifference(), data);
-                    return;
-                }
-            }
-            byte[] data = new byte[bytesAvailable];
-            serialPort.readBytes(data, data.length); // Ist das überhaupt nötig?
-            buffer.put(data);
-            int lastPosition = buffer.position();
-            buffer.position(0);
-            for (int i = 0; i < lastPosition; i++) {
-                if (buffer.get(i) == startByte) {
-                    if (i + shortestFrame.getLength() - 1 > lastPosition) {
-                        break;
-                    }
-                    if (i + 3 > lastPosition) { // < oder <= ?
-                        continue;
-                    }
-                    for (NarcotrackFrames frame: NarcotrackFrames.values()) {
-                        if (buffer.get(i + 3) != frame.getIdentifier()) {
-                            continue;
-                        }
-                        if (i + frame.getLength() - 1 <= lastPosition && buffer.get(i + frame.getLength() - 1) == endByte) {
-                            LOGGER.debug("Found a frame of type {} in the buffer", frame);
-                            if (i > 0) {
-                                LOGGER.warn("There is a fragment of {} bytes that cannot be categorized!", i);
-                                byte[] remains = new byte[i];
-                                buffer.position(0);
-                                buffer.get(remains);
-                                new RemainsEvent(getTimeDifference(), remains);
-                            } else {
-                                buffer.position(i);
-                            }
-                            switch (frame) {
-                                case EEG:
-                                    new EEGEvent(getTimeDifference(), buffer);
-                                    break;
-                                case CURRENT_ASSESSMENT:
-                                    new CurrentAssessmentEvent(getTimeDifference(), buffer);
-                                    break;
-                                case POWER_SPECTRUM:
-                                    new PowerSpectrumEvent(getTimeDifference(), buffer);
-                                    break;
-                                case ELECTRODE_CHECK:
-                                    new ElectrodeCheckEvent(getTimeDifference(), buffer);
-                                    break;
-                            }
-                        }
-                    }
-                }
-            }
-        }, 1, 1, TimeUnit.SECONDS);
+        initializeSerialPort();
+        scheduleSerialPortReadout();
 
         StatisticHandler statisticHandler = new StatisticHandler();
         MariaDatabaseHandler mariaDatabaseHandler = new MariaDatabaseHandler(this);
         ElectrodeDisconnectedListener electrodeDisconnectedListener = new ElectrodeDisconnectedListener();
-        LOGGER.info("Initialization of NarcotrackListener completed");
     }
 
     class SerialPortShutdownHook extends Thread {
@@ -208,8 +115,157 @@ public class Narcotrack {
         }
     }
 
-    public long getStartTime() {
+    public Instant getStartTime() {
         return startTime;
+    }
+
+    private void initializeSerialPort() {
+        if (narcotrackSerialDescriptor == null || narcotrackSerialDescriptor.trim().isEmpty()) {
+            LOGGER.error("Could not find serialPortDescriptor. Maybe, environment variables are not loaded?");
+            rebootPlatform();
+            return;
+        }
+        try {
+            LOGGER.debug("Connecting to serial port using descriptor {}", narcotrackSerialDescriptor);
+            serialPort = SerialPort.getCommPort(narcotrackSerialDescriptor);
+            serialPort.setBaudRate(115200);
+            serialPort.setNumDataBits(8);
+            serialPort.setParity(SerialPort.NO_PARITY);
+            serialPort.setNumStopBits(SerialPort.ONE_STOP_BIT);
+            serialPort.openPort();
+            Runtime.getRuntime().addShutdownHook(new SerialPortShutdownHook());
+            // JSerial only accepts ONE DataListener?!
+            //serialPort.addDataListener(new SerialPortDisconnectListener());
+            LOGGER.info("Connected to serial port");
+        } catch (Exception e) {
+            LOGGER.error("Could not connect to serial port, serialPortDescriptor: {}, Exception Message: {}", narcotrackSerialDescriptor, e.getMessage(), e);
+            try {
+                if (Arrays.stream(SerialPort.getCommPorts()).noneMatch(serialPort -> serialPort.getSystemPortPath().equalsIgnoreCase(narcotrackSerialDescriptor))) {
+                    LOGGER.error("Port Descriptor {} does not match any of the available serial ports. Available ports are {}", narcotrackSerialDescriptor, Arrays.stream(SerialPort.getCommPorts()).map(sp -> sp.getSystemPortPath()).collect(Collectors.joining(" ")));
+                } else {
+                    LOGGER.error("Port Descriptor matches one of the available serial ports, but connection could not be opened");
+                }
+            } catch (Exception ex) {
+                LOGGER.error("Could not create debug message showing CommPorts, Exception Message: {}", ex.getMessage(), ex);
+            }
+            rebootPlatform();
+        }
+    }
+
+    private void scheduleSerialPortReadout() {
+        ScheduledExecutorService ses = Executors.newScheduledThreadPool(1);
+        ScheduledFuture<?> scheduledFuture = ses.scheduleAtFixedRate(() -> {
+            // Wartet scheduledFuture auf den vorherigen Durchlauf? Sonst könnte es eine Race Condition geben, wenn mal die DB timeoutet (Alternativ unwahrscheinlicher, wenn diese Aufgaben async ablaufen)
+            int bytesAvailable = serialPort.bytesAvailable();
+            if (bytesAvailable == 0) {
+                intervalsWithoutData++;
+                if (intervalsWithoutData%60 == 0) {
+                    LOGGER.warn("No data received for {}mins", intervalsWithoutData/60);
+                    if (intervalsWithoutData/60 >= 5) {
+                        Narcotrack.rebootPlatform();
+                    }
+                }
+                return;
+            }
+            intervalsWithoutData = 0;
+
+            if (bytesAvailable + buffer.position() > buffer.capacity()) {
+                // buffer.position() ist 1 größer als der tatsächliche Füllzustand des Buffers. buffer.capacity() entspricht exakt der Größe.
+                // Angenommen cap wäre 10, enthalten sind 5 (dadurch buffer.position() -> 5) und 5 bytesAvailable => 10 -> nicht größer als capacity() (10), daher okay
+                // Angenommen cap wäre 10, enthalten sind 5 (dadurch buffer.position() -> 5) und 6 bytesAvailable => 11 > 10 -> abgelehnt
+                LOGGER.warn("bytesAvailable would overfill the remaining buffer space. Moving existing bytes in buffer to remains (bytesAvailable: {}, buffer.position(): {}, buffer.capacity(): {}).", bytesAvailable, buffer.position(), buffer.capacity());
+                // Move Buffer to remains!
+                new RemainsEvent(getTimeDifference(), buffer);
+                if (bytesAvailable > buffer.capacity()) {
+                    LOGGER.warn("bytesAvailable would overfill the entire buffer space. Moving bytesAvailable to remains");
+                    // Move bytesAvailable to remains
+                    byte[] data = new byte[bytesAvailable];
+                    serialPort.readBytes(data, data.length);
+                    saveBytesToBackupFile(data);
+                    new RemainsEvent(getTimeDifference(), data);
+                    return;
+                }
+            }
+            byte[] data = new byte[bytesAvailable];
+            serialPort.readBytes(data, data.length); // Ist das überhaupt nötig?
+            saveBytesToBackupFile(data);
+            buffer.put(data);
+            int lastPosition = buffer.position();
+            buffer.position(0);
+            for (int i = 0; i <= lastPosition; i++) {
+                if (i + shortestFrame.getLength() > lastPosition) {
+                    // Wenn buffer mit 12 bytes gefüllt -> buffer.position(): 12; shortestFrame: 10; i = 0; i++
+                    // i: 0; 10 >! 12; verfügbare Bytes: 12
+                    // i: 1; 11 >! 12; verfügbare Bytes: 11
+                    // i: 2; 12 >! 12; verfügbare Bytes: 10
+                    // i: 3; 13 > 12; verfügbare Bytes: 9
+                    break;
+                }
+                if (buffer.get(i) == startByte) {
+                    if (i + 3 >= lastPosition) {
+                        // buffer enthält 4 bytes [0, 3]; buffer.position()/lastPosition: 4;
+                        // i: 0 ; 3 >= 4 => fail
+                        // i: 1; 4 >= 4 => ok
+                        continue;
+                    }
+                    for (NarcotrackFrames frame: NarcotrackFrames.values()) {
+                        if (buffer.get(i + 3) != frame.getIdentifier()) {
+                            continue;
+                        }
+                        if (i + frame.getLength() > lastPosition) {
+                            // Bsp.: frame 5 Bytes; buffer hat 5 bytes: buffer.position()/lastPosition: 5
+                            // i: 0 =>
+                            continue;
+                        }
+                        if (buffer.get(i + frame.getLength() - 1) != endByte) {
+                            continue;
+                        }
+                        LOGGER.debug("Found a frame of type {} in the buffer", frame);
+                        // Wenn zwischen zwei Paketen ein defektes Paket oder Fragment liegt, wird es nicht gespeichert.
+                        if (buffer.position() != i) {
+                            // buffer.position(): 0; i: 2 => byte[0, 1] ist remains
+                            // buffer.position: 3; i: 6 => byte[3, 5] ist remains
+                            byte[] remains = new byte[i - buffer.position()];
+                            buffer.get(remains);
+                            new RemainsEvent(getTimeDifference(), remains);
+                        }
+                        buffer.position(i);
+                        switch (frame) {
+                            case EEG:
+                                new EEGEvent(getTimeDifference(), buffer);
+                                break;
+                            case CURRENT_ASSESSMENT:
+                                new CurrentAssessmentEvent(getTimeDifference(), buffer);
+                                break;
+                            case POWER_SPECTRUM:
+                                new PowerSpectrumEvent(getTimeDifference(), buffer);
+                                break;
+                            case ELECTRODE_CHECK:
+                                new ElectrodeCheckEvent(getTimeDifference(), buffer);
+                                break;
+                        }
+                        // Paket der Länge 5 beginnt bei 0 (byte[0,4]) und wird nur von [0,2] gelesen. Soll eigentlich bei
+                        // buffer.position(): 5 sein (vor dem 5. Byte) entsprechend der Paketlänge
+                        // Korrektur daher auf i + Paketlänge
+                        buffer.position(i + frame.getLength());
+
+                        // buffer.position(): 3 (da byte[0,2] als Paket abgearbeitet wurden), i: 0
+                        // i += 3 - 1, damit im nächsten Durchlauf mit i++ i: 3 entspricht (wäre dann auch der nächste Start-Byte, wenn das letzte Paket bis 2 ging)
+                        i += frame.getLength() - 1;
+                        break;
+                        // break nötig, da sonst innerhalb des Pakets ein weiteres Paket gefunden werden könnte. Wenn das passiert, wäre aber der buffer komplett an der falschen Position, da er in der Loop nicht deklarativ gesetzt, sondern als Marker genutzt wird
+                    }
+                }
+            }
+        }, 1, 1, TimeUnit.SECONDS);
+    }
+
+    private void saveBytesToBackupFile(byte[] data) {
+        try {
+            Files.write(dataFilePath, data, StandardOpenOption.APPEND);
+        } catch (IOException e) {
+            LOGGER.error("saveBytesToBackupFile failed. Exception message: {}", e.getMessage(), e);
+        }
     }
 
 }

@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
+import java.time.Instant;
 import java.util.Arrays;
 
 public class MariaDatabaseHandler implements NarcotrackEventHandler {
@@ -25,7 +26,7 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
     private final String NARCOTRACK_DB_TABLE = System.getenv("NARCOTRACK_DB_TABLE");
     private final String NARCOTRACK_DB_USERNAME = System.getenv("NARCOTRACK_DB_USERNAME");
     private final String NARCOTRACK_DB_PASSWORD = System.getenv("NARCOTRACK_DB_PASSWORD");
-    private final Narcotrack narcotrack;
+    private final Instant startTime;
     private Connection databaseConnection;
     private int recordId;
     private PreparedStatement recordingsStatement, eegStatement, currentAssessmentStatement, powerSpectrumStatement, spectrumStatement, electrodeCheckStatement, remainsStatement;
@@ -33,7 +34,7 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
     private final int eegBatchMax = 32, currentAssessmentBatchMax = 2;
 
     public MariaDatabaseHandler(Narcotrack narcotrack) {
-        this.narcotrack = narcotrack;
+        startTime = narcotrack.getStartTime();
 
         try {
             LOGGER.debug("Connecting to database {}", NARCOTRACK_DB_URL);
@@ -76,7 +77,7 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
     }
 
     public void createRecording() throws SQLException {
-        recordingsStatement.setTimestamp(1, new Timestamp(narcotrack.getStartTime()));
+        recordingsStatement.setTimestamp(1, Timestamp.from(startTime));
         if(recordingsStatement.executeUpdate() < 1) {
             LOGGER.error("Could not insert recording, got no rows back");
             Narcotrack.rebootPlatform();

@@ -21,8 +21,6 @@ public class ElectrodeCheck extends NarcotrackFrame {
         info = buffer.get();
         chkSum = new byte[2];
         buffer.get(chkSum);
-        // Resetting buffer position to start
-        buffer.position(buffer.position() + 1);
     }
 
     public float getImp1a() {
