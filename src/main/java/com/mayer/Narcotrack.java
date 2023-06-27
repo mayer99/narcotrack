@@ -125,8 +125,7 @@ public class Narcotrack {
             serialPort.setNumStopBits(SerialPort.ONE_STOP_BIT);
             serialPort.openPort();
             Runtime.getRuntime().addShutdownHook(new SerialPortShutdownHook());
-            // JSerial only accepts ONE DataListener?!
-            //serialPort.addDataListener(new SerialPortDisconnectListener());
+            serialPort.addDataListener(new SerialPortDisconnectListener());
             LOGGER.info("Connected to serial port");
         } catch (Exception e) {
             LOGGER.error("Could not connect to serial port, serialPortDescriptor: {}, Exception Message: {}", narcotrackSerialDescriptor, e.getMessage(), e);
@@ -148,7 +147,7 @@ public class Narcotrack {
         ScheduledFuture<?> scheduledFuture = ses.scheduleAtFixedRate(() -> {
             // Wartet scheduledFuture auf den vorherigen Durchlauf? Sonst könnte es eine Race Condition geben, wenn mal die DB timeoutet (Alternativ unwahrscheinlicher, wenn diese Aufgaben async ablaufen)
             int bytesAvailable = serialPort.bytesAvailable();
-            LOGGER.info("{} bytes available", bytesAvailable);
+            LOGGER.debug("{} bytes available", bytesAvailable);
             if (bytesAvailable == 0) {
                 intervalsWithoutData++;
                 if (intervalsWithoutData%60 == 0) {
@@ -167,9 +166,6 @@ public class Narcotrack {
                 LOGGER.error("Could not calculate timeDifference. startTimeReference was {} (ns) and currentTime is {} (ns). currentTime is not 100% accurate, Exception Message: {}",System.nanoTime(), startTimeReference, e.getMessage(), e);
                 time = -1;
             }
-            // PaketID in der Aufzeichnung
-            // PaketID in der Sekunde
-            // PaketCounter der Sekunde
 
             if (bytesAvailable + buffer.position() > buffer.capacity()) {
                 // buffer.position() ist 1 größer als der tatsächliche Füllzustand des Buffers. buffer.capacity() entspricht exakt der Größe.
@@ -189,6 +185,10 @@ public class Narcotrack {
                     return;
                 }
             }
+            int eegCounter = 0;
+            int currentAssessmentCounter = 0;
+            int powerSpectrumCounter = 0;
+            int electrodeCheckCounter = 0;
             byte[] data = new byte[bytesAvailable];
             serialPort.readBytes(data, data.length);
             saveBytesToBackupFile(data);
@@ -238,16 +238,20 @@ public class Narcotrack {
                         buffer.position(i);
                         switch (frame) {
                             case EEG:
-                                new EEGEvent(time, buffer);
+                                eegCounter++;
+                                new EEGEvent(eegCounter, time, buffer);
                                 break;
                             case CURRENT_ASSESSMENT:
-                                new CurrentAssessmentEvent(time, buffer);
+                                currentAssessmentCounter++;
+                                new CurrentAssessmentEvent(currentAssessmentCounter, time, buffer);
                                 break;
                             case POWER_SPECTRUM:
-                                new PowerSpectrumEvent(time, buffer);
+                                powerSpectrumCounter++;
+                                new PowerSpectrumEvent(powerSpectrumCounter, time, buffer);
                                 break;
                             case ELECTRODE_CHECK:
-                                new ElectrodeCheckEvent(time, buffer);
+                                electrodeCheckCounter++;
+                                new ElectrodeCheckEvent(electrodeCheckCounter, time, buffer);
                                 break;
                         }
                         // Paket der Länge 5 beginnt bei 0 (byte[0,4]) und wird nur von [0,2] gelesen. Soll eigentlich bei
@@ -268,7 +272,6 @@ public class Narcotrack {
                 // 2 byte fehlen => 7 - 5
                 byte[] endFragment = new byte[lastPosition - buffer.position()];
                 buffer.get(endFragment);
-                LOGGER.info("After endFragment: lastPosition: {}, buffer: {}", lastPosition, buffer.position());
                 buffer.clear();
                 buffer.put(endFragment);
             } else {

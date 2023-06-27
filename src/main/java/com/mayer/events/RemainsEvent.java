@@ -1,5 +1,6 @@
 package com.mayer.events;
 
+import com.mayer.NarcotrackEventHandler;
 import com.mayer.Remains;
 
 import java.nio.ByteBuffer;

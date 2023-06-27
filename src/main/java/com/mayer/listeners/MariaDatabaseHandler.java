@@ -1,7 +1,7 @@
 package com.mayer.listeners;
 
 import com.mayer.Narcotrack;
-import com.mayer.events.NarcotrackEventHandler;
+import com.mayer.NarcotrackEventHandler;
 import com.mayer.events.CurrentAssessmentEvent;
 import com.mayer.events.EEGEvent;
 import com.mayer.events.ElectrodeCheckEvent;

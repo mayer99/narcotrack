@@ -1,4 +1,6 @@
-package com.mayer.events;
+package com.mayer;
+
+import com.mayer.events.*;
 
 public interface NarcotrackEventHandler {
 
