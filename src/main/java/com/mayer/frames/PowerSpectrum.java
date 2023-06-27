@@ -11,9 +11,7 @@ public class PowerSpectrum extends NarcotrackFrame {
     private final byte[] chkSum;
 
     public PowerSpectrum(ByteBuffer buffer) {
-        super(NarcotrackFrames.POWER_SPECTRUM);
-        buffer.position(buffer.position() - length);
-        buffer.get(raw);
+        super(NarcotrackFrames.POWER_SPECTRUM, buffer);
         buffer.position(buffer.position() - length + 4);
         spectrum1 = new int[128];
         for (int i = 0; i < 128; i++) {
@@ -26,8 +24,6 @@ public class PowerSpectrum extends NarcotrackFrame {
         info = buffer.get();
         chkSum = new byte[2];
         buffer.get(chkSum);
-        // Resetting buffer position to start
-        buffer.position(buffer.position() + 1 - length);
     }
 
     public int[] getSpectrum1() {

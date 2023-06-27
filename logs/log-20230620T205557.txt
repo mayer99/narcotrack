@@ -1,0 +1,3 @@
+com.mayer.playground.Playground -- Buffer position before adding data 0, data: 10, last byte of buffer: -40
+com.mayer.playground.Playground -- Buffer position after adding data 10, buffer position 4: -40
+com.mayer.playground.Playground -- Buffer cap: 10

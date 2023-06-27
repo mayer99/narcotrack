@@ -1,5 +1,6 @@
 package com.mayer.events;
 
+import com.mayer.NarcotrackEventHandler;
 import com.mayer.frames.PowerSpectrum;
 
 import java.nio.ByteBuffer;
@@ -11,7 +12,7 @@ public class PowerSpectrumEvent extends NarcotrackEvent {
 
     private final PowerSpectrum powerSpectrum;
 
-    public PowerSpectrumEvent(int time, ByteBuffer buffer) {
+    public PowerSpectrumEvent(int counter, int time, ByteBuffer buffer) {
         super(time);
         powerSpectrum = new PowerSpectrum(buffer);
         HANDLERS.forEach(handler -> handler.onPowerSpectrumEvent(this));

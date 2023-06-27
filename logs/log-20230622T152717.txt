@@ -1,0 +1,38 @@
+com.mayer.Narcotrack -- Application starting...
+com.mayer.Narcotrack -- startTime is 1687440437, startTimeReference is 1150485588540792, Backup file is called: 2023-06-22-15-27-17.bin
+com.mayer.Narcotrack -- Could not connect to serial port, serialPortDescriptor: COM1, Exception Message: Unable to create a serial port object from the invalid port descriptor: /dev/COM1
+com.fazecast.jSerialComm.SerialPortInvalidPortException: Unable to create a serial port object from the invalid port descriptor: /dev/COM1
+	at com.fazecast.jSerialComm.SerialPort.getCommPort(SerialPort.java:410)
+	at com.mayer.Narcotrack.initializeSerialPort(Narcotrack.java:130)
+	at com.mayer.Narcotrack.<init>(Narcotrack.java:58)
+	at com.mayer.Narcotrack.main(Narcotrack.java:106)
+Caused by: java.io.IOException: null
+	at com.fazecast.jSerialComm.SerialPort.getCommPort(SerialPort.java:407)
+	... 3 common frames omitted
+com.mayer.Narcotrack -- Port Descriptor COM1 does not match any of the available serial ports. Available ports are /dev/cu.Bluetooth-Incoming-Port /dev/tty.Bluetooth-Incoming-Port
+com.mayer.Narcotrack -- Preparing reboot
+c.mayer.listeners.StatisticHandler -- starting...
+c.m.listeners.MariaDatabaseHandler -- Error creating connection, creating prepared statements or insert recording, Exception Message: Socket fail to connect to host:address=(host=null)(port=3306)(type=primary). null
+java.sql.SQLNonTransientConnectionException: Socket fail to connect to host:address=(host=null)(port=3306)(type=primary). null
+	at org.mariadb.jdbc.client.impl.ConnectionHelper.connectSocket(ConnectionHelper.java:137)
+	at org.mariadb.jdbc.client.impl.StandardClient.<init>(StandardClient.java:99)
+	at org.mariadb.jdbc.Driver.connect(Driver.java:70)
+	at org.mariadb.jdbc.Driver.connect(Driver.java:101)
+	at org.mariadb.jdbc.Driver.connect(Driver.java:27)
+	at java.sql/java.sql.DriverManager.getConnection(DriverManager.java:677)
+	at java.sql/java.sql.DriverManager.getConnection(DriverManager.java:228)
+	at com.mayer.listeners.MariaDatabaseHandler.<init>(MariaDatabaseHandler.java:41)
+	at com.mayer.Narcotrack.<init>(Narcotrack.java:62)
+	at com.mayer.Narcotrack.main(Narcotrack.java:106)
+Caused by: java.net.UnknownHostException: null
+	at java.base/java.net.AbstractPlainSocketImpl.connect(AbstractPlainSocketImpl.java:220)
+	at java.base/java.net.SocksSocketImpl.connect(SocksSocketImpl.java:403)
+	at java.base/java.net.Socket.connect(Socket.java:591)
+	at org.mariadb.jdbc.client.impl.ConnectionHelper.connectSocket(ConnectionHelper.java:131)
+	... 9 common frames omitted
+com.mayer.Narcotrack -- Preparing reboot
+c.mayer.listeners.StatisticHandler -- Statistics for the last 30s:
+EEGs: 0 (0/s)
+CurrentAssessments: 0 (0/s)
+PowerSpectrums: 0
+ElectrodeChecks: 0

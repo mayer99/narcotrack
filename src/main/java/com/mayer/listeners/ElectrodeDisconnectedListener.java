@@ -1,6 +1,6 @@
 package com.mayer.listeners;
 
-import com.mayer.events.NarcotrackEventHandler;
+import com.mayer.NarcotrackEventHandler;
 import com.mayer.events.CurrentAssessmentEvent;
 import com.mayer.events.EEGEvent;
 import com.mayer.events.ElectrodeCheckEvent;
@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 
 public class ElectrodeDisconnectedListener implements NarcotrackEventHandler {
@@ -51,10 +50,8 @@ public class ElectrodeDisconnectedListener implements NarcotrackEventHandler {
         impedances.put("imp1a", event.getData().getImp1a());
         impedances.put("imp1b", event.getData().getImp1b());
         impedances.put("impRef", event.getData().getImpRef());
-        impedances.put("imp2a", event.getData().getImp2a());
-        impedances.put("imp2b", event.getData().getImp2b());
         impedances.forEach((name, impedance) -> {
-            if (impedance >= 45 || impedance <= 0.05) {
+            if (impedance >= 45) {
                 LOGGER.warn("Received ElectrodeCheck with loose {} Electrode (impedance: {})", name, impedance);
             }
         });

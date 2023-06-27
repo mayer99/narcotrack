@@ -1,8 +1,7 @@
 package com.mayer.listeners;
 
 import com.mayer.Narcotrack;
-import com.mayer.NarcotrackListener;
-import com.mayer.events.NarcotrackEventHandler;
+import com.mayer.NarcotrackEventHandler;
 import com.mayer.events.CurrentAssessmentEvent;
 import com.mayer.events.EEGEvent;
 import com.mayer.events.ElectrodeCheckEvent;
@@ -16,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
+import java.time.Instant;
 import java.util.Arrays;
 
 public class MariaDatabaseHandler implements NarcotrackEventHandler {
@@ -26,15 +26,15 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
     private final String NARCOTRACK_DB_TABLE = System.getenv("NARCOTRACK_DB_TABLE");
     private final String NARCOTRACK_DB_USERNAME = System.getenv("NARCOTRACK_DB_USERNAME");
     private final String NARCOTRACK_DB_PASSWORD = System.getenv("NARCOTRACK_DB_PASSWORD");
-    private final NarcotrackListener narcotrackListener;
+    private final Instant startTime;
     private Connection databaseConnection;
     private int recordId;
     private PreparedStatement recordingsStatement, eegStatement, currentAssessmentStatement, powerSpectrumStatement, spectrumStatement, electrodeCheckStatement, remainsStatement;
     private int eegBatchCounter = 0, currentAssessmentBatchCounter = 0;
     private final int eegBatchMax = 32, currentAssessmentBatchMax = 2;
 
-    public MariaDatabaseHandler(NarcotrackListener narcotrackListener) {
-        this.narcotrackListener = narcotrackListener;
+    public MariaDatabaseHandler(Narcotrack narcotrack) {
+        startTime = narcotrack.getStartTime();
 
         try {
             LOGGER.debug("Connecting to database {}", NARCOTRACK_DB_URL);
@@ -77,7 +77,7 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
     }
 
     public void createRecording() throws SQLException {
-        recordingsStatement.setTimestamp(1, new Timestamp(narcotrackListener.getStartTime()));
+        recordingsStatement.setTimestamp(1, Timestamp.from(startTime));
         if(recordingsStatement.executeUpdate() < 1) {
             LOGGER.error("Could not insert recording, got no rows back");
             Narcotrack.rebootPlatform();
@@ -234,11 +234,11 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
             final ElectrodeCheck data = event.getData();
             electrodeCheckStatement.setInt(1, recordId);
             electrodeCheckStatement.setInt(2, event.getTime());
-            electrodeCheckStatement.setFloat(3, data.getImp1a());
-            electrodeCheckStatement.setFloat(4, data.getImp1b());
-            electrodeCheckStatement.setFloat(5, data.getImpRef());
-            electrodeCheckStatement.setFloat(6, data.getImp2a());
-            electrodeCheckStatement.setFloat(7, data.getImp2b());
+            electrodeCheckStatement.setFloat(3, adjustImpedance(data.getImp1a()));
+            electrodeCheckStatement.setFloat(4, adjustImpedance(data.getImp1b()));
+            electrodeCheckStatement.setFloat(5, adjustImpedance(data.getImpRef()));
+            electrodeCheckStatement.setFloat(6, adjustImpedance(data.getImp2a()));
+            electrodeCheckStatement.setFloat(7, adjustImpedance(data.getImp2b()));
             electrodeCheckStatement.setByte(8, data.getInfo());
             electrodeCheckStatement.setBytes(9, data.getChkSum());
             electrodeCheckStatement.setBytes(10, data.getRaw());
@@ -247,7 +247,14 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
         } catch (SQLException e) {
             LOGGER.error("Error processing Electrode Check data, Exception Message: {}", e.getMessage(), e);
         }
+    }
 
+    private float adjustImpedance(float impedance) {
+        if (Float.isInfinite(impedance) || Float.isNaN(impedance)) {
+            LOGGER.warn("Received impedance that is infinite or NaN");
+            return -1;
+        }
+        return impedance;
     }
 
     @Override

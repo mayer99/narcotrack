@@ -28,9 +28,7 @@ public class CurrentAssessment extends NarcotrackFrame {
     private final byte[] chkSum;
 
     public CurrentAssessment(ByteBuffer buffer) {
-        super (NarcotrackFrames.CURRENT_ASSESSMENT);
-        buffer.position(buffer.position() - length);
-        buffer.get(raw);
+        super (NarcotrackFrames.CURRENT_ASSESSMENT, buffer);
         buffer.position(buffer.position() - length + 4);
         eegIndex = buffer.getShort();
         emgIndex = buffer.getShort();
@@ -73,8 +71,6 @@ public class CurrentAssessment extends NarcotrackFrame {
         buffer.get(reserved2);
         chkSum = new byte[2];
         buffer.get(chkSum);
-        // Resetting buffer position to start
-        buffer.position(buffer.position() + 1 - length);
     }
 
     public short getEegIndex() {

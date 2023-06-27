@@ -13,9 +13,14 @@ repositories {
 
 remotes {
     pi {
-        host = System.getenv('PI_HOST')
-        user = System.getenv('PI_USERNAME')
-        password = System.getenv('PI_PASSWORD')
+        Properties pi = new Properties()
+        def propertiesFile = project.rootProject.file('pi.properties')
+        if (propertiesFile.exists()) {
+            pi.load(propertiesFile.newDataInputStream())
+        }
+        host = pi.getProperty('raspberry1.host')
+        user = pi.getProperty('raspberry1.username')
+        password = pi.getProperty('raspberry1.password')
     }
 
 }
