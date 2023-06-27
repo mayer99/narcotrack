@@ -1,3 +1,0 @@
-com.mayer.playground.Playground -- Buffer position before adding data 0, data: 5, last byte of buffer: 74
-com.mayer.playground.Playground -- Buffer position after adding data 5, buffer position 4: 74
-com.mayer.playground.Playground -- Buffer cap: 50000

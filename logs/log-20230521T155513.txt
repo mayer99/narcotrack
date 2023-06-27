@@ -1,1 +1,0 @@
-o.m.jdbc.message.server.ErrorPacket -- Error: 1045-28000: Access denied for user 'Maximilian'@'172.17.0.1' (using password: NO)

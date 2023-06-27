@@ -1,2 +1,0 @@
-com.mayer.playground.Playground -- buffer.position(): 10, buffer.get(3): 99
-com.mayer.playground.Playground -- buffer.get(): 99

@@ -1,2 +1,0 @@
-com.mayer.Playground -- Example log from Playground
-com.mayer.NarcotrackStatistics -- No data received since 1min

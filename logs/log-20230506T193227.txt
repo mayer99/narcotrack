@@ -1,2 +1,0 @@
-com.mayer.Playground -- Smallest ist ELECTRODE_CHECK
-com.mayer.Playground -- null

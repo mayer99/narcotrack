@@ -1,6 +1,0 @@
-com.mayer.playground.Playground -- Scheduled Future called. Time is 2003
-com.mayer.playground.Playground -- Scheduled Future called. Time is 4002
-com.mayer.playground.Playground -- Scheduled Future called. Time is 6003
-com.mayer.playground.Playground -- Scheduled Future called. Time is 8002
-com.mayer.playground.Playground -- Scheduled Future called. Time is 10002
-com.mayer.playground.Playground -- Scheduled Future called. Time is 12002
