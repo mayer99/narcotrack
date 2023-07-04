@@ -1,2 +1,0 @@
-com.mayer.playground.Playground -- Scheduled Future called. Time is 2002
-com.mayer.playground.Playground -- Scheduled Future called. Time is 4002
