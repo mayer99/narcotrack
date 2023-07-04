@@ -1,4 +1,5 @@
 .gradle
 .idea
-logs
 build
+logs
+src/main/java/com/mayer/playground
