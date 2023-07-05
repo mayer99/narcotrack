@@ -1,6 +1,6 @@
 package com.mayer.frames;
 
-import com.mayer.NarcotrackFrames;
+import com.mayer.NarcotrackFrameType;
 
 import java.nio.ByteBuffer;
 
@@ -28,7 +28,7 @@ public class CurrentAssessment extends NarcotrackFrame {
     private final byte[] chkSum;
 
     public CurrentAssessment(ByteBuffer buffer) {
-        super (NarcotrackFrames.CURRENT_ASSESSMENT, buffer);
+        super (NarcotrackFrameType.CURRENT_ASSESSMENT, buffer);
         buffer.position(buffer.position() - length + 4);
         eegIndex = buffer.getShort();
         emgIndex = buffer.getShort();

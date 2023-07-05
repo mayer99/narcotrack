@@ -1,6 +1,6 @@
 package com.mayer.frames;
 
-import com.mayer.NarcotrackFrames;
+import com.mayer.NarcotrackFrameType;
 
 import java.nio.ByteBuffer;
 
@@ -11,7 +11,7 @@ public class PowerSpectrum extends NarcotrackFrame {
     private final byte[] chkSum;
 
     public PowerSpectrum(ByteBuffer buffer) {
-        super(NarcotrackFrames.POWER_SPECTRUM, buffer);
+        super(NarcotrackFrameType.POWER_SPECTRUM, buffer);
         buffer.position(buffer.position() - length + 4);
         spectrum1 = new int[128];
         for (int i = 0; i < 128; i++) {

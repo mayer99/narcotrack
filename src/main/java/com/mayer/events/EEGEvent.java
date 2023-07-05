@@ -1,6 +1,7 @@
 package com.mayer.events;
 
 import com.mayer.NarcotrackEventHandler;
+import com.mayer.NarcotrackFrameType;
 import com.mayer.frames.EEG;
 
 import java.nio.ByteBuffer;
@@ -12,8 +13,8 @@ public class EEGEvent extends NarcotrackEvent {
 
     private final EEG eeg;
 
-    public EEGEvent(int counter, int time, ByteBuffer buffer) {
-        super(time);
+    public EEGEvent(int time, ByteBuffer buffer) {
+        super(time, NarcotrackFrameType.EEG);
         eeg = new EEG(buffer);
         HANDLERS.forEach(handler -> handler.onEEGEvent(this));
     }

@@ -6,7 +6,7 @@ import com.mayer.events.EEGEvent;
 import com.mayer.events.ElectrodeCheckEvent;
 import com.mayer.events.PowerSpectrumEvent;
 import com.mayer.events.RemainsEvent;
-import com.mayer.NarcotrackFrames;
+import com.mayer.NarcotrackFrameType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,11 +27,11 @@ public class StatisticHandler implements NarcotrackEventHandler {
         ScheduledExecutorService ses = Executors.newScheduledThreadPool(1);
         ScheduledFuture<?> scheduledFuture = ses.scheduleAtFixedRate(() -> {
             LOGGER.info("Statistics for the last {}s", INTERVAL_DURATION);
-            LOGGER.info("EEGs: {} ({}/s)", NarcotrackFrames.EEG.getCount(), (NarcotrackFrames.EEG.getCount() / INTERVAL_DURATION));
-            LOGGER.info("CurrentAssessments: {} ({}/s)", NarcotrackFrames.CURRENT_ASSESSMENT.getCount(), (NarcotrackFrames.CURRENT_ASSESSMENT.getCount() / INTERVAL_DURATION));
-            LOGGER.info("PowerSpectrums: {}", NarcotrackFrames.POWER_SPECTRUM.getCount());
-            LOGGER.info("ElectrodeChecks: {}", NarcotrackFrames.ELECTRODE_CHECK.getCount());
-            for (NarcotrackFrames frame: NarcotrackFrames.values()) {
+            LOGGER.info("EEGs: {} ({}/s)", NarcotrackFrameType.EEG.getCount(), (NarcotrackFrameType.EEG.getCount() / INTERVAL_DURATION));
+            LOGGER.info("CurrentAssessments: {} ({}/s)", NarcotrackFrameType.CURRENT_ASSESSMENT.getCount(), (NarcotrackFrameType.CURRENT_ASSESSMENT.getCount() / INTERVAL_DURATION));
+            LOGGER.info("PowerSpectrums: {}", NarcotrackFrameType.POWER_SPECTRUM.getCount());
+            LOGGER.info("ElectrodeChecks: {}", NarcotrackFrameType.ELECTRODE_CHECK.getCount());
+            for (NarcotrackFrameType frame: NarcotrackFrameType.values()) {
                 frame.resetCounter();
             }
         }, INTERVAL_DURATION, INTERVAL_DURATION, TimeUnit.SECONDS);
@@ -44,23 +44,23 @@ public class StatisticHandler implements NarcotrackEventHandler {
 
     @Override
     public void onEEGEvent(EEGEvent event) {
-        NarcotrackFrames.EEG.count();
+        NarcotrackFrameType.EEG.count();
     }
 
     @Override
     public void onCurrentAssessmentEvent(CurrentAssessmentEvent event) {
-        NarcotrackFrames.CURRENT_ASSESSMENT.count();
+        NarcotrackFrameType.CURRENT_ASSESSMENT.count();
     }
 
     @Override
     public void onPowerSpectrumEvent(PowerSpectrumEvent event) {
-        NarcotrackFrames.POWER_SPECTRUM.count();
+        NarcotrackFrameType.POWER_SPECTRUM.count();
     }
 
 
     @Override
     public void onElectrodeCheckEvent(ElectrodeCheckEvent event) {
-        NarcotrackFrames.ELECTRODE_CHECK.count();
+        NarcotrackFrameType.ELECTRODE_CHECK.count();
     }
 
     @Override

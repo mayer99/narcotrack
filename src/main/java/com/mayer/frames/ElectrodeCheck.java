@@ -1,6 +1,6 @@
 package com.mayer.frames;
 
-import com.mayer.NarcotrackFrames;
+import com.mayer.NarcotrackFrameType;
 
 import java.nio.ByteBuffer;
 
@@ -11,7 +11,7 @@ public class ElectrodeCheck extends NarcotrackFrame {
     private final byte[] chkSum;
 
     public ElectrodeCheck(ByteBuffer buffer) {
-        super(NarcotrackFrames.ELECTRODE_CHECK, buffer);
+        super(NarcotrackFrameType.ELECTRODE_CHECK, buffer);
         buffer.position(buffer.position() - length + 4);
         imp1a = buffer.getFloat();
         imp1b = buffer.getFloat();

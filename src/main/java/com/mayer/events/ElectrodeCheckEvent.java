@@ -1,6 +1,7 @@
 package com.mayer.events;
 
 import com.mayer.NarcotrackEventHandler;
+import com.mayer.NarcotrackFrameType;
 import com.mayer.frames.ElectrodeCheck;
 
 import java.nio.ByteBuffer;
@@ -12,8 +13,8 @@ public class ElectrodeCheckEvent extends NarcotrackEvent {
 
     private final ElectrodeCheck electrodeCheck;
 
-    public ElectrodeCheckEvent(int counter, int time, ByteBuffer buffer) {
-        super(time);
+    public ElectrodeCheckEvent(int time, ByteBuffer buffer) {
+        super(time, NarcotrackFrameType.ELECTRODE_CHECK);
         electrodeCheck = new ElectrodeCheck(buffer);
         HANDLERS.forEach(handler -> handler.onElectrodeCheckEvent(this));
     }

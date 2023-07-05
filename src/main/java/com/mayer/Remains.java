@@ -12,12 +12,10 @@ public class Remains {
         chunks = new ArrayList<>();
         int endPosition = buffer.position();
         buffer.position(0);
-        if (endPosition > 1000) {
+        while (endPosition - buffer.position() > 1000) {
             byte[] chunk = new byte[1000];
-            while (endPosition - buffer.position() > 1000) {
-                buffer.get(chunk);
-                chunks.add(chunk);
-            }
+            buffer.get(chunk);
+            chunks.add(chunk);
         }
         if (endPosition - buffer.position() > 0) {
             byte[] lastChunk = new byte[endPosition - buffer.position()];

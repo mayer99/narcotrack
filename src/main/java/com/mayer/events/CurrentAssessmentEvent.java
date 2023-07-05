@@ -1,6 +1,7 @@
 package com.mayer.events;
 
 import com.mayer.NarcotrackEventHandler;
+import com.mayer.NarcotrackFrameType;
 import com.mayer.frames.CurrentAssessment;
 
 import java.nio.ByteBuffer;
@@ -12,8 +13,8 @@ public class CurrentAssessmentEvent extends NarcotrackEvent {
 
     private final CurrentAssessment currentAssessment;
 
-    public CurrentAssessmentEvent(int counter, int time, ByteBuffer buffer) {
-        super(time);
+    public CurrentAssessmentEvent(int time, ByteBuffer buffer) {
+        super(time, NarcotrackFrameType.CURRENT_ASSESSMENT);
         currentAssessment = new CurrentAssessment(buffer);
         HANDLERS.forEach(handler -> handler.onCurrentAssessmentEvent(this));
     }
