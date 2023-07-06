@@ -6,7 +6,6 @@ import com.fazecast.jSerialComm.SerialPortEvent;
 import com.mayer.events.*;
 import com.mayer.listeners.ElectrodeDisconnectedListener;
 import com.mayer.listeners.MariaDatabaseHandler;
-import com.mayer.listeners.StatisticHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
