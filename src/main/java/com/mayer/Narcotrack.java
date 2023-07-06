@@ -51,7 +51,10 @@ public class Narcotrack {
         LOGGER.info("startTime: {}, startTimeReference: {}, backupFile: {}", startTime.getEpochSecond(), startTimeReference, backupFileName);
         buffer = ByteBuffer.allocate(50000).order(ByteOrder.LITTLE_ENDIAN);
 
-        initializeSerialPort();
+        if (!initializeSerialPort()) {
+            rebootPlatform();
+            return;
+        }
         scheduleSerialPortReadout();
 
         MariaDatabaseHandler mariaDatabaseHandler = new MariaDatabaseHandler(this);
@@ -93,7 +96,6 @@ public class Narcotrack {
             Runtime.getRuntime().exec("sudo shutdown -r now");
         } catch (IOException e) {
             LOGGER.error("Cannot restart system. Error message: {}", e.getMessage(), e);
-        } finally {
             System.exit(1);
         }
     }
@@ -106,11 +108,11 @@ public class Narcotrack {
         return startTime;
     }
 
-    private void initializeSerialPort() {
+    private boolean initializeSerialPort() {
         String SERIAL_DESCRIPTOR = System.getenv("NARCOTRACK_SERIAL_DESCRIPTOR");
         if (SERIAL_DESCRIPTOR == null || SERIAL_DESCRIPTOR.trim().isEmpty()) {
             LOGGER.error("Could not find NARCOTRACK_SERIAL_DESCRIPTOR. Maybe, environment variables are not loaded?");
-            rebootPlatform();
+            return false;
         }
         try {
             LOGGER.debug("Connecting to serial port using descriptor {}", SERIAL_DESCRIPTOR);
@@ -123,6 +125,7 @@ public class Narcotrack {
             Runtime.getRuntime().addShutdownHook(new SerialPortShutdownHook());
             serialPort.addDataListener(new SerialPortDisconnectListener());
             LOGGER.info("Connected to serial port");
+            return true;
         } catch (Exception e) {
             LOGGER.error("Could not connect to serial port, SERIAL_DESCRIPTOR: {}, Exception Message: {}", SERIAL_DESCRIPTOR, e.getMessage(), e);
             try {
@@ -134,7 +137,7 @@ public class Narcotrack {
             } catch (Exception ex) {
                 LOGGER.error("Could not create debug message showing CommPorts, Exception Message: {}", ex.getMessage(), ex);
             }
-            rebootPlatform();
+            return false;
         }
     }
 
