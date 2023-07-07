@@ -4,6 +4,7 @@ import com.fazecast.jSerialComm.SerialPort;
 import com.fazecast.jSerialComm.SerialPortDataListener;
 import com.fazecast.jSerialComm.SerialPortEvent;
 import com.mayer.events.*;
+import com.mayer.listeners.EEGMonitorHandler;
 import com.mayer.listeners.ElectrodeDisconnectedListener;
 import com.mayer.listeners.MariaDatabaseHandler;
 import org.slf4j.Logger;
@@ -18,6 +19,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.concurrent.Executors;
@@ -31,7 +33,7 @@ public class Narcotrack {
     private static final Logger LOGGER = LoggerFactory.getLogger(Narcotrack.class);
     private static final byte START_BYTE = (byte)0xFF;
     private static final byte END_BYTE = (byte)0xFE;
-
+    private static final ArrayList<NarcotrackEventHandler> HANDLERS = new ArrayList<>();
 
     private SerialPort serialPort;
     private final ByteBuffer buffer;
@@ -59,6 +61,7 @@ public class Narcotrack {
 
         MariaDatabaseHandler mariaDatabaseHandler = new MariaDatabaseHandler(this);
         ElectrodeDisconnectedListener electrodeDisconnectedListener = new ElectrodeDisconnectedListener();
+        EEGMonitorHandler eegMonitorHandler = new EEGMonitorHandler();
     }
 
     class SerialPortShutdownHook extends Thread {
@@ -271,6 +274,7 @@ public class Narcotrack {
                 buffer.clear();
             }
             NarcotrackFrameType.resetCounters();
+            HANDLERS.forEach(handler -> handler.onEndOfInterval());
         }, 1, 1, TimeUnit.SECONDS);
     }
 
@@ -280,6 +284,10 @@ public class Narcotrack {
         } catch (IOException e) {
             LOGGER.error("saveBytesToBackupFile failed. Exception message: {}", e.getMessage(), e);
         }
+    }
+
+    public static ArrayList<NarcotrackEventHandler> getEventHandlers() {
+        return HANDLERS;
     }
 
 }

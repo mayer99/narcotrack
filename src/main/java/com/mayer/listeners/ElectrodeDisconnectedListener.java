@@ -15,14 +15,11 @@ import java.util.List;
 
 public class ElectrodeDisconnectedListener implements NarcotrackEventHandler {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(StatisticHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ElectrodeDisconnectedListener.class);
 
     public ElectrodeDisconnectedListener() {
-        EEGEvent.getEventHandlers().add(this);
         CurrentAssessmentEvent.getEventHandlers().add(this);
-        PowerSpectrumEvent.getEventHandlers().add(this);
         ElectrodeCheckEvent.getEventHandlers().add(this);
-        RemainsEvent.getEventHandlers().add(this);
     }
 
     @Override
