@@ -78,17 +78,29 @@ public class EEGMonitorHandler implements NarcotrackEventHandler {
         bufferChannel1.position(0);
         byte[] eegValues1Byte = new byte[endPosition];
         bufferChannel1.get(eegValues1Byte);
+        int[] eegValues1ByteU = new int[eegValues1Byte.length];
+        for (int i = 0; i < eegValues1Byte.length; i++) {
+            eegValues1ByteU[i] = Byte.toUnsignedInt(eegValues1Byte[i]);
+        }
 
         bufferChannel1.position(0);
         short[] eegValues2Bytes = new short[endPosition/2];
         for (int i = 0; i < eegValues2Bytes.length; i++) {
             eegValues2Bytes[i] = bufferChannel1.getShort();
         }
+        int[] eegValues2BytesU = new int[eegValues2Bytes.length];
+        for (int i = 0; i < eegValues2Bytes.length; i++) {
+            eegValues2BytesU[i] = Short.toUnsignedInt(eegValues2Bytes[i]);
+        }
 
         bufferChannel1.position(0);
         int[] eegValues4Bytes = new int[endPosition/4];
         for (int i = 0; i < eegValues4Bytes.length; i++) {
             eegValues4Bytes[i] = bufferChannel1.getInt();
+        }
+        long[] eegValues4BytesU = new long[eegValues4Bytes.length];
+        for (int i = 0; i < eegValues4Bytes.length; i++) {
+            eegValues4BytesU[i] = Integer.toUnsignedLong(eegValues4Bytes[i]);
         }
 
         bufferChannel1.position(0);
@@ -102,13 +114,17 @@ public class EEGMonitorHandler implements NarcotrackEventHandler {
 
         JSONObject data = new JSONObject();
         try {
-            data.put("channel1Byte", eegValues1Byte);
-            data.put("channel1Short", eegValues2Bytes);
-            data.put("channel1Int", eegValues4Bytes);
-            data.put("channel1Long", eegValues8Bytes);
+            data.put("eegValues1Byte", eegValues1Byte);
+            data.put("eegValues1ByteU", eegValues1ByteU);
+            data.put("eegValues2Bytes", eegValues2Bytes);
+            data.put("eegValues2BytesU", eegValues2BytesU);
+            data.put("eegValues4Bytes", eegValues4Bytes);
+            data.put("eegValues4BytesU", eegValues4BytesU);
+            data.put("eegValues8Bytes", eegValues8Bytes);
             socket.emit("eeg", data);
         } catch (Exception e) {
             LOGGER.warn("Could not send eeg data, Exception message: {}", e.getMessage(), e);
         }
     }
+
 }

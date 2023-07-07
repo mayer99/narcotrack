@@ -15,11 +15,11 @@ public class PowerSpectrum extends NarcotrackFrame {
         buffer.position(buffer.position() - length + 4);
         spectrum1 = new int[128];
         for (int i = 0; i < 128; i++) {
-            spectrum1[i] = buffer.getShort();
+            spectrum1[i] = Short.toUnsignedInt(buffer.getShort());
         }
         spectrum2 = new int[128];
         for (int i = 0; i < 128; i++) {
-            spectrum2[i] = buffer.getShort();
+            spectrum2[i] = Short.toUnsignedInt(buffer.getShort());
         }
         info = buffer.get();
         chkSum = new byte[2];
