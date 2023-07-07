@@ -14,6 +14,11 @@ public abstract class NarcotrackEvent {
         frameCount = frameType.getCount();
     }
 
+    public NarcotrackEvent(int time) {
+        this.time = time;
+        frameCount = 0;
+    }
+
     public int getTime() {
         return time;
     }
