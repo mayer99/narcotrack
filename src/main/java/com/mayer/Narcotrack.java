@@ -156,7 +156,7 @@ public class Narcotrack {
             // Wartet scheduledFuture auf den vorherigen Durchlauf? Sonst könnte es eine Race Condition geben, wenn mal die DB timeoutet (Alternativ unwahrscheinlicher, wenn diese Aufgaben async ablaufen)
             int bytesAvailable = serialPort.bytesAvailable();
             LOGGER.debug("{} bytes available", bytesAvailable);
-            if (bytesAvailable == 0) {
+            if (bytesAvailable > 0) {
                 intervalsWithoutData++;
                 if (intervalsWithoutData%60 == 0) {
                     LOGGER.warn("No data received for {}mins", intervalsWithoutData/60);
