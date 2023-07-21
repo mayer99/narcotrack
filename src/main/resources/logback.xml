@@ -8,7 +8,7 @@
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
         <file>./logs/log-${timestamp}.txt</file>
         <encoder>
-            <pattern>%logger{35} -%kvp- %msg%n</pattern>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
     <appender name="SOCKET" class="com.mayer.logging.SocketAppender">
