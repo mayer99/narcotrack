@@ -92,6 +92,7 @@ public class Narcotrack {
         @Override
         public void serialEvent(SerialPortEvent event) {
             LOGGER.error("Listener noticed disconnect of serial port");
+            rebootPlatform();
         }
     }
 
@@ -132,7 +133,6 @@ public class Narcotrack {
             serialPort.setNumStopBits(SerialPort.ONE_STOP_BIT);
             serialPort.openPort();
             Runtime.getRuntime().addShutdownHook(new SerialPortShutdownHook());
-            serialPort.addDataListener(new SerialPortDisconnectListener());
             LOGGER.info("Connected to serial port");
             return true;
         } catch (Exception e) {
