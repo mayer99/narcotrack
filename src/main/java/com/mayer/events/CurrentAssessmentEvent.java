@@ -14,7 +14,7 @@ public class CurrentAssessmentEvent extends NarcotrackEvent {
     private final CurrentAssessment currentAssessment;
 
     public CurrentAssessmentEvent(int time, ByteBuffer buffer) {
-        super(time, NarcotrackFrameType.CURRENT_ASSESSMENT);
+        super(time);
         currentAssessment = new CurrentAssessment(buffer);
         HANDLERS.forEach(handler -> handler.onCurrentAssessmentEvent(this));
     }

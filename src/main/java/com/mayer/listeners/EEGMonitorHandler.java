@@ -21,10 +21,14 @@ public class EEGMonitorHandler implements NarcotrackEventHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(EEGMonitorHandler.class);
 
     private Socket socket;
-    private final ByteBuffer bufferChannel1;
-    private final ByteBuffer bufferChannel2;
+    private ByteBuffer bufferChannel1;
+    private ByteBuffer bufferChannel2;
 
     public EEGMonitorHandler() {
+        if (System.getenv("NARCOTRACK_EEG_MONITOR") != "ON") {
+            LOGGER.info("EEG monitor connection turned off");
+            return;
+        }
         bufferChannel1 = ByteBuffer.allocate(5000).order(ByteOrder.LITTLE_ENDIAN);
         bufferChannel2 = ByteBuffer.allocate(5000).order(ByteOrder.LITTLE_ENDIAN);
         try {
@@ -34,27 +38,12 @@ public class EEGMonitorHandler implements NarcotrackEventHandler {
                     .build();
             socket = IO.socket(uri, options);
             socket.connect();
-            EEGEvent.getEventHandlers().add(this);
-            Narcotrack.getEventHandlers().add(this);
+            Narcotrack.registerNarcotrackEventListener(this);
         } catch (Exception e) {
             LOGGER.error("Could not initialize EEGMonitorHandler. Exception: {}", e.getMessage(), e);
         }
     }
 
-    public String byteToHex(byte num) {
-        char[] hexDigits = new char[2];
-        hexDigits[0] = Character.forDigit((num >> 4) & 0xF, 16);
-        hexDigits[1] = Character.forDigit((num & 0xF), 16);
-        return new String(hexDigits);
-    }
-
-    public String encodeHexString(byte[] byteArray) {
-        StringBuffer hexStringBuffer = new StringBuffer();
-        for (int i = 0; i < byteArray.length; i++) {
-            hexStringBuffer.append(byteToHex(byteArray[i]));
-        }
-        return hexStringBuffer.toString();
-    }
 
     @Override
     public void onEEGEvent(EEGEvent event) {
@@ -62,68 +51,54 @@ public class EEGMonitorHandler implements NarcotrackEventHandler {
             LOGGER.warn("Raw data of EEGEvent is too short");
             return;
         }
-        // ff2800f1304f304f304f304f304f304f304f304f48fd1cfde6fcbafc8ffc6efc4dfc2dfc04590ffe
         bufferChannel1.put(Arrays.copyOfRange(event.getData().getRaw(), 4, 20));
         bufferChannel2.put(Arrays.copyOfRange(event.getData().getRaw(), 20, 36));
     }
 
+    public int[] getIntValues(ByteBuffer buffer) {
+        int[] values = new int[buffer.position()/2];
+        buffer.position(0);
+        for (int i = 0; i < values.length; i++) {
+            values[i] = Short.toUnsignedInt(buffer.getShort());
+        }
+        return values;
+    }
+
+    public short[] getShortValues(ByteBuffer buffer) {
+        short[] values = new short[buffer.position()/2];
+        buffer.position(0);
+        for (int i = 0; i < values.length; i++) {
+            values[i] = buffer.getShort();
+        }
+        return values;
+    }
+
     @Override
     public void onEndOfInterval() {
-        int endPosition = bufferChannel1.position();
-        if (!(endPosition%2 == 0 && endPosition%4 == 0 && endPosition%8 == 0)) {
-            LOGGER.warn("bytes in bufferChannel1 are not dividable by 2, 4 or 8");
+
+        if (bufferChannel1.position()%2 != 0) {
+            LOGGER.warn("bytes in bufferChannel1 are not dividable by 2");
             bufferChannel1.clear();
             return;
         }
-        bufferChannel1.position(0);
-        byte[] eegValues1Byte = new byte[endPosition];
-        bufferChannel1.get(eegValues1Byte);
-        int[] eegValues1ByteU = new int[eegValues1Byte.length];
-        for (int i = 0; i < eegValues1Byte.length; i++) {
-            eegValues1ByteU[i] = Byte.toUnsignedInt(eegValues1Byte[i]);
+        if (bufferChannel2.position()%2 != 0) {
+            LOGGER.warn("bytes in bufferChannel1 are not dividable by 2");
+            bufferChannel2.clear();
+            return;
         }
-
-        bufferChannel1.position(0);
-        short[] eegValues2Bytes = new short[endPosition/2];
-        for (int i = 0; i < eegValues2Bytes.length; i++) {
-            eegValues2Bytes[i] = bufferChannel1.getShort();
-        }
-        int[] eegValues2BytesU = new int[eegValues2Bytes.length];
-        for (int i = 0; i < eegValues2Bytes.length; i++) {
-            eegValues2BytesU[i] = Short.toUnsignedInt(eegValues2Bytes[i]);
-        }
-
-        bufferChannel1.position(0);
-        int[] eegValues4Bytes = new int[endPosition/4];
-        for (int i = 0; i < eegValues4Bytes.length; i++) {
-            eegValues4Bytes[i] = bufferChannel1.getInt();
-        }
-        long[] eegValues4BytesU = new long[eegValues4Bytes.length];
-        for (int i = 0; i < eegValues4Bytes.length; i++) {
-            eegValues4BytesU[i] = Integer.toUnsignedLong(eegValues4Bytes[i]);
-        }
-
-        bufferChannel1.position(0);
-        long[] eegValues8Bytes = new long[endPosition/8];
-        for (int i = 0; i < eegValues8Bytes.length; i++) {
-            eegValues8Bytes[i] = bufferChannel1.getLong();
-        }
-
-        bufferChannel1.clear();
-        bufferChannel2.clear();
 
         JSONObject data = new JSONObject();
         try {
-            data.put("eegValues1Byte", eegValues1Byte);
-            data.put("eegValues1ByteU", eegValues1ByteU);
-            data.put("eegValues2Bytes", eegValues2Bytes);
-            data.put("eegValues2BytesU", eegValues2BytesU);
-            data.put("eegValues4Bytes", eegValues4Bytes);
-            data.put("eegValues4BytesU", eegValues4BytesU);
-            data.put("eegValues8Bytes", eegValues8Bytes);
+            data.put("channel1", getShortValues(bufferChannel1));
+            data.put("channel1U", getIntValues(bufferChannel1));
+            data.put("channel2", getShortValues(bufferChannel2));
+            data.put("channel2U", getIntValues(bufferChannel2));
             socket.emit("eeg", data);
         } catch (Exception e) {
             LOGGER.warn("Could not send eeg data, Exception message: {}", e.getMessage(), e);
+        } finally {
+            bufferChannel1.clear();
+            bufferChannel2.clear();
         }
     }
 

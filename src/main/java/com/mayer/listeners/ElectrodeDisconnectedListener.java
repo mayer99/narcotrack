@@ -1,5 +1,6 @@
 package com.mayer.listeners;
 
+import com.mayer.Narcotrack;
 import com.mayer.NarcotrackEventHandler;
 import com.mayer.events.CurrentAssessmentEvent;
 import com.mayer.events.EEGEvent;
@@ -18,8 +19,7 @@ public class ElectrodeDisconnectedListener implements NarcotrackEventHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(ElectrodeDisconnectedListener.class);
 
     public ElectrodeDisconnectedListener() {
-        CurrentAssessmentEvent.getEventHandlers().add(this);
-        ElectrodeCheckEvent.getEventHandlers().add(this);
+        Narcotrack.registerNarcotrackEventListener(this);
     }
 
     @Override

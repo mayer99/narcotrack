@@ -7,6 +7,7 @@ import com.mayer.events.*;
 import com.mayer.listeners.EEGMonitorHandler;
 import com.mayer.listeners.ElectrodeDisconnectedListener;
 import com.mayer.listeners.MariaDatabaseHandler;
+import com.mayer.listeners.StatisticsHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +63,7 @@ public class Narcotrack {
         MariaDatabaseHandler mariaDatabaseHandler = new MariaDatabaseHandler(this);
         ElectrodeDisconnectedListener electrodeDisconnectedListener = new ElectrodeDisconnectedListener();
         EEGMonitorHandler eegMonitorHandler = new EEGMonitorHandler();
+        StatisticsHandler statisticsHandler = new StatisticsHandler();
     }
 
     class SerialPortShutdownHook extends Thread {
@@ -71,7 +73,7 @@ public class Narcotrack {
             LOGGER.warn("Shutdown Hook triggered, closing serial port");
             if (serialPort != null && serialPort.isOpen()) {
                 serialPort.closePort();
-                LOGGER.info("Closed serial port");
+                LOGGER.info("Closed serial port ");
             }
         }
     }
@@ -154,7 +156,7 @@ public class Narcotrack {
                 intervalsWithoutData++;
                 if (intervalsWithoutData%60 == 0) {
                     LOGGER.warn("No data received for {}mins", intervalsWithoutData/60);
-                    if (intervalsWithoutData/60 >= 5) {
+                    if (intervalsWithoutData/60 >= 3) {
                         Narcotrack.rebootPlatform();
                     }
                 }
@@ -273,7 +275,6 @@ public class Narcotrack {
             } else {
                 buffer.clear();
             }
-            NarcotrackFrameType.resetCounters();
             HANDLERS.forEach(handler -> handler.onEndOfInterval());
         }, 1, 1, TimeUnit.SECONDS);
     }
@@ -286,8 +287,13 @@ public class Narcotrack {
         }
     }
 
-    public static ArrayList<NarcotrackEventHandler> getEventHandlers() {
-        return HANDLERS;
+    public static void registerNarcotrackEventListener(NarcotrackEventHandler handler) {
+        EEGEvent.getEventHandlers().add(handler);
+        CurrentAssessmentEvent.getEventHandlers().add(handler);
+        PowerSpectrumEvent.getEventHandlers().add(handler);
+        ElectrodeCheckEvent.getEventHandlers().add(handler);
+        RemainsEvent.getEventHandlers().add(handler);
+        HANDLERS.add(handler);
     }
 
 }

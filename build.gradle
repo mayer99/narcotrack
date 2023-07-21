@@ -13,14 +13,9 @@ repositories {
 
 remotes {
     pi {
-        Properties pi = new Properties()
-        def propertiesFile = project.rootProject.file('pi.properties')
-        if (propertiesFile.exists()) {
-            pi.load(propertiesFile.newDataInputStream())
-        }
-        host = pi.getProperty('raspberry1.host')
-        user = pi.getProperty('raspberry1.username')
-        password = pi.getProperty('raspberry1.password')
+        host = "raspberrypi.local"
+        user = "pi"
+        password = "d5D49AnCUN#ChH@yLzH5Y745vs*7Pr&f"
     }
 
 }
