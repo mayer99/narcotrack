@@ -42,6 +42,8 @@ public class Narcotrack {
     private final long startTimeReference;
     private final String backupFileName;
     private final Path backupFilePath;
+    private int backupDataCounter = 0;
+    private ByteBuffer backupDataBuffer;
     private int intervalsWithoutData = 0;
 
     private Narcotrack() {
@@ -53,6 +55,7 @@ public class Narcotrack {
         backupFilePath = Paths.get("backup", backupFileName);
         LOGGER.info("startTime: {}, startTimeReference: {}, backupFile: {}", startTime.getEpochSecond(), startTimeReference, backupFileName);
         buffer = ByteBuffer.allocate(50000).order(ByteOrder.LITTLE_ENDIAN);
+        backupDataBuffer = ByteBuffer.allocate(100000).order(ByteOrder.LITTLE_ENDIAN);
 
         if (!initializeSerialPort()) {
             rebootPlatform();
@@ -280,10 +283,22 @@ public class Narcotrack {
     }
 
     private void saveBytesToBackupFile(byte[] data) {
-        try {
-            Files.write(backupFilePath, data, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-        } catch (IOException e) {
-            LOGGER.error("saveBytesToBackupFile failed. Exception message: {}", e.getMessage(), e);
+        backupDataCounter++;
+        backupDataBuffer.put(data);
+        LOGGER.debug("Added {} bytes to backupDataBuffer", data.length);
+        if (backupDataCounter >= 15) {
+            try {
+                byte[] backupData = new byte[backupDataBuffer.position()];
+                backupDataBuffer.position(0);
+                backupDataBuffer.get(backupData);
+                Files.write(backupFilePath, backupData, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                LOGGER.info("Added {} bytes to the backup file", backupData.length);
+            } catch (IOException e) {
+                LOGGER.error("saveBytesToBackupFile failed. Exception message: {}", e.getMessage(), e);
+            } finally {
+                backupDataCounter = 0;
+                backupDataBuffer.position(0);
+            }
         }
     }
 
