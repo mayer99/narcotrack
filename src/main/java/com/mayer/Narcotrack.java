@@ -58,6 +58,7 @@ public class Narcotrack {
         backupDataBuffer = ByteBuffer.allocate(100000).order(ByteOrder.LITTLE_ENDIAN);
 
         if (!initializeSerialPort()) {
+            LOGGER.error("Rebooting because of error initializing serial port");
             rebootPlatform();
             return;
         }
