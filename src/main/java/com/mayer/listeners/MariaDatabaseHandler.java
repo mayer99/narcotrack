@@ -31,8 +31,8 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
     private int recordId;
     private PreparedStatement recordingsStatement, eegStatement, currentAssessmentStatement, powerSpectrumStatement, spectrumStatement, electrodeCheckStatement, remainsStatement;
     private int eegCounter = 0;
-    private int eegBatchCounter = 0, currentAssessmentBatchCounter = 0;
-    private final int eegBatchMax = 32, currentAssessmentBatchMax = 2;
+    private int intervalCounter = 0;
+    private final int intervalMax = 10;
 
     public MariaDatabaseHandler(Narcotrack narcotrack) {
         startTime = narcotrack.getStartTime();
@@ -97,19 +97,16 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
             eegStatement.setBytes(4, event.getData().getRaw());
             eegStatement.addBatch();
             eegCounter++;
-            eegBatchCounter++;
             LOGGER.debug("Created EEG batch");
         } catch (SQLException e) {
             LOGGER.error("Error processing EEG data, Exception Message: {}", e.getMessage(), e);
             try {
                 eegStatement.clearBatch();
                 eegCounter = 0;
-                eegBatchCounter = 0;
             } catch (SQLException ex) {
                 LOGGER.error("Could not clear EEG Batch, Exception Message: {}", ex.getMessage(), ex);
             }
         }
-
     }
 
     @Override
@@ -156,13 +153,11 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
             currentAssessmentStatement.setBytes(37, data.getChkSum()); // chk_sum
             currentAssessmentStatement.setBytes(38, data.getRaw()); // raw
             currentAssessmentStatement.addBatch();
-            currentAssessmentBatchCounter++;
             LOGGER.debug("Created Current Assessment batch");
         } catch (SQLException e) {
             LOGGER.error("Error processing Current Assessment data, Exception Message: {}", e.getMessage(), e);
             try {
                 currentAssessmentStatement.clearBatch();
-                currentAssessmentBatchCounter = 0;
             } catch (SQLException ex) {
                 LOGGER.error("Could not clear currentAssessment Batch, Exception Message: {}", ex.getMessage(), ex);
             }
@@ -268,22 +263,15 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
     @Override
     public void onEndOfInterval() {
         eegCounter = 0;
-        if (eegBatchCounter >= eegBatchMax) {
-            eegBatchCounter = 0;
+        intervalCounter++;
+        if (intervalCounter >= intervalMax) {
+            intervalCounter = 0;
             try {
                 eegStatement.executeBatch();
-                LOGGER.debug("Sent EEG batch");
-            } catch (SQLException e) {
-                LOGGER.error("Error processing EEG data, Exception Message: {}", e.getMessage(), e);
-            }
-        }
-        if(currentAssessmentBatchCounter >= currentAssessmentBatchMax) {
-            currentAssessmentBatchCounter = 0;
-            try {
                 currentAssessmentStatement.executeBatch();
-                LOGGER.debug("Sent Current Assessment batch");
+                LOGGER.debug("Sent EEG and Current Assessment batch");
             } catch (SQLException e) {
-                LOGGER.error("Error processing Current Assessment data, Exception Message: {}", e.getMessage(), e);
+                LOGGER.error("Error processing EEG or CurrentAssessment Frame, Exception Message: {}", e.getMessage(), e);
             }
         }
     }
