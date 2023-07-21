@@ -3,10 +3,7 @@ package com.mayer.listeners;
 import com.mayer.Narcotrack;
 import com.mayer.NarcotrackEventHandler;
 import com.mayer.events.CurrentAssessmentEvent;
-import com.mayer.events.EEGEvent;
 import com.mayer.events.ElectrodeCheckEvent;
-import com.mayer.events.PowerSpectrumEvent;
-import com.mayer.events.RemainsEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,14 +40,20 @@ public class ElectrodeDisconnectedListener implements NarcotrackEventHandler {
 
     @Override
     public void onElectrodeCheckEvent(ElectrodeCheckEvent event) {
+        float imp1a = event.getData().getImp1a();
+        float impRef = event.getData().getImpRef();
+        float imp1b = event.getData().getImp1b();
         HashMap<String, Float> impedances = new HashMap<>();
-        impedances.put("imp1a", event.getData().getImp1a());
-        impedances.put("imp1b", event.getData().getImp1b());
-        impedances.put("impRef", event.getData().getImpRef());
+        impedances.put("imp1a", imp1a);
+        impedances.put("imp1b", imp1b);
+        impedances.put("impRef", impRef);
         impedances.forEach((name, impedance) -> {
             if (impedance >= 45) {
                 LOGGER.warn("Received ElectrodeCheck with loose {} Electrode (impedance: {})", name, impedance);
             }
         });
+        if (Math.abs(imp1a - impRef) > 3 || Math.abs(imp1b - impRef) > 3 || Math.abs(imp1a - imp1b) > 3) {
+            LOGGER.warn("Received ElectrodeCheck with impendance difference between two electrodes");
+        }
     }
 }
