@@ -97,7 +97,7 @@ public class Narcotrack {
     }
 
     public static void rebootPlatform() {
-        LOGGER.error("Preparing reboot");
+        LOGGER.error("Preparing reboot ##########################################################################################");
         if (System.getenv("PLEASE_DO_NOT_RESTART") != null) {
             LOGGER.info("Did not restart because of PLEASE_DO_NOT_RESTART");
             return;
