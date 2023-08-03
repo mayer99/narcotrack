@@ -15,7 +15,7 @@
         <prefix>SocketIO</prefix>
     </appender>
 
-    <root level="INFO">
+    <root level="DEBUG">
         <appender-ref ref="STDOUT" />
         <appender-ref ref="FILE" />
         <appender-ref ref="SOCKET" />

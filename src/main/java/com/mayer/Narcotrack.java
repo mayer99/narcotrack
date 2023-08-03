@@ -52,7 +52,7 @@ public class Narcotrack {
         startTimeReference = System.nanoTime();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
         backupFileName = sdf.format(Date.from(startTime)) + ".bin";
-        backupFilePath = Paths.get("backup", backupFileName);
+        backupFilePath = Paths.get("backups", backupFileName);
         LOGGER.info("startTime: {}, startTimeReference: {}, backupFile: {}", startTime.getEpochSecond(), startTimeReference, backupFileName);
         buffer = ByteBuffer.allocate(50000).order(ByteOrder.LITTLE_ENDIAN);
         backupDataBuffer = ByteBuffer.allocate(100000).order(ByteOrder.LITTLE_ENDIAN);
