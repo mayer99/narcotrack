@@ -19,11 +19,7 @@ public class StatisticsHandler implements NarcotrackEventHandler {
         counter++;
         if (counter >= 30) {
             counter = 0;
-            LOGGER.info("Statistics of the last 30s:");
-            LOGGER.info("EEG Frames: {}, ({}/s)", NarcotrackFrameType.EEG.getCount(), NarcotrackFrameType.EEG.getCount()/30);
-            LOGGER.info("CurrentAssessment Frames: {}, ({}/s)", NarcotrackFrameType.CURRENT_ASSESSMENT.getCount(), NarcotrackFrameType.CURRENT_ASSESSMENT.getCount()/30);
-            LOGGER.info("ElectrodeCheck Frames: {}", NarcotrackFrameType.ELECTRODE_CHECK.getCount());
-            LOGGER.info("PowerSpectrum Frames: {}", NarcotrackFrameType.POWER_SPECTRUM.getCount());
+            LOGGER.info("Statistics of the last 30s: EEG Frames: {}, ({}/s), CurrentAssessment Frames: {}, ({}/s), ElectrodeCheck Frames: {}, PowerSpectrum Frames: {}", NarcotrackFrameType.EEG.getCount(), NarcotrackFrameType.EEG.getCount()/30, NarcotrackFrameType.CURRENT_ASSESSMENT.getCount(), NarcotrackFrameType.CURRENT_ASSESSMENT.getCount()/30, NarcotrackFrameType.ELECTRODE_CHECK.getCount(), NarcotrackFrameType.POWER_SPECTRUM.getCount());
             NarcotrackFrameType.resetCounters();
         }
     }

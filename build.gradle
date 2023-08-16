@@ -1,11 +1,10 @@
 plugins {
     id 'java'
-    id 'application'
     id 'org.hidetake.ssh' version '2.11.2'
 }
 
-group 'com.mayer'
-version '1.0-SNAPSHOT'
+group = 'com.mayer99'
+version '1.0.0'
 
 repositories {
     mavenCentral()
@@ -19,26 +18,17 @@ remotes {
     }
 
 }
+
 jar {
-
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    from {
-        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
-    }
-
-}
-
-task deploy(type: Jar) {
-
     manifest {
-        attributes 'Main-Class': 'com.mayer.Narcotrack'
+        attributes "Main-Class": "com.mayer.Narcotrack"
     }
-    with jar
-
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
     doLast {
         ssh.run {
             session(remotes.pi) {
-                put from: file('build/libs/Narcotrack-1.0-SNAPSHOT.jar'), into: '/home/pi/narcotrack'
+                put from: file('build/libs/narcotrack-1.0.0.jar'), into: '/home/pi'
             }
 
         }
@@ -54,10 +44,7 @@ dependencies {
     implementation 'org.slf4j:slf4j-parent:2.0.5'
     implementation 'ch.qos.logback:logback-classic:1.4.6'
     implementation 'org.projectlombok:lombok:1.18.26'
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
-}
-
-test {
-    useJUnitPlatform()
+    implementation 'com.pi4j:pi4j-core:2.3.0'
+    implementation 'com.pi4j:pi4j-plugin-raspberrypi:2.3.0'
+    implementation 'com.pi4j:pi4j-plugin-pigpio:2.3.0'
 }

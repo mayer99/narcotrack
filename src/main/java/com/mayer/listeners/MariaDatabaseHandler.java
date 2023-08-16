@@ -22,10 +22,6 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MariaDatabaseHandler.class);
 
-    private final String NARCOTRACK_DB_URL = System.getenv("NARCOTRACK_DB_URL");
-    private final String NARCOTRACK_DB_TABLE = System.getenv("NARCOTRACK_DB_TABLE");
-    private final String NARCOTRACK_DB_USERNAME = System.getenv("NARCOTRACK_DB_USERNAME");
-    private final String NARCOTRACK_DB_PASSWORD = System.getenv("NARCOTRACK_DB_PASSWORD");
     private final Instant startTime;
     private Connection databaseConnection;
     private int recordId;
@@ -38,7 +34,11 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
         startTime = narcotrack.getStartTime();
 
         try {
+            String NARCOTRACK_DB_URL = System.getenv("NARCOTRACK_DB_URL");
             LOGGER.debug("Connecting to database {}", NARCOTRACK_DB_URL);
+            String NARCOTRACK_DB_TABLE = System.getenv("NARCOTRACK_DB_TABLE");
+            String NARCOTRACK_DB_USERNAME = System.getenv("NARCOTRACK_DB_USERNAME");
+            String NARCOTRACK_DB_PASSWORD = System.getenv("NARCOTRACK_DB_PASSWORD");
             databaseConnection = DriverManager.getConnection("jdbc:mariadb://" + NARCOTRACK_DB_URL + ":3306/" + NARCOTRACK_DB_TABLE, NARCOTRACK_DB_USERNAME, NARCOTRACK_DB_PASSWORD);
             Runtime.getRuntime().addShutdownHook(new DatabaseShutdownHook());
 

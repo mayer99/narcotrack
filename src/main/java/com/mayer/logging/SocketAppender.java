@@ -2,6 +2,7 @@ package com.mayer.logging;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.spi.IThrowableProxy;
 import ch.qos.logback.classic.spi.StackTraceElementProxy;
 import ch.qos.logback.core.AppenderBase;
 import io.socket.client.IO;
@@ -20,18 +21,15 @@ import java.util.stream.Collectors;
 
 public class SocketAppender extends AppenderBase<ILoggingEvent> {
 
-    private final String authURLString;
-    private final String logURLString;
-    private final String logLevel;
     private int minimumLevel;
     private boolean active;
     private boolean guard;
     private Socket socket;
 
     public SocketAppender() {
-        authURLString = System.getenv("NARCOTRACK_AUTH_URL");
-        logURLString = System.getenv("NARCOTRACK_LOG_URL");
-        logLevel = System.getenv("NARCOTRACK_LOGLEVEL");
+        String authURLString = System.getenv("NARCOTRACK_AUTH_URL");
+        String logURLString = System.getenv("NARCOTRACK_LOG_URL");
+        String logLevel = System.getenv("NARCOTRACK_LOGLEVEL");
         if (authURLString == null || authURLString.trim().isEmpty()) {
             addWarn("Could not load authURLString, is the environment variable set and accessible?");
             active = false;
@@ -44,6 +42,7 @@ public class SocketAppender extends AppenderBase<ILoggingEvent> {
         }
         if (logLevel == null || logLevel.trim().isEmpty()) {
             addWarn("Could not load logLevel, is the environment variable set and accessible?");
+            logLevel = "";
         }
         try {
             URL url = new URL(authURLString);
@@ -58,29 +57,21 @@ public class SocketAppender extends AppenderBase<ILoggingEvent> {
             }
             String jwt = collectResponse(con.getInputStream());
             con.disconnect();
+            System.out.println("Before jwt print");
             addInfo("Received JWT: " + jwt);
+            System.out.println("After jwt print");
 
-            switch(logLevel) {
-                case "ERROR":
-                    minimumLevel = Level.ERROR.toInt();
-                    break;
-                case "WARN":
-                    minimumLevel = Level.WARN.toInt();
-                    break;
-                case "DEBUG":
-                    minimumLevel = Level.DEBUG.toInt();
-                    break;
-                case "INFO":
-                default:
-                    minimumLevel = Level.INFO.toInt();
+            switch (logLevel) {
+                case "ERROR" -> minimumLevel = Level.ERROR.toInt();
+                case "WARN" -> minimumLevel = Level.WARN.toInt();
+                case "DEBUG" -> minimumLevel = Level.DEBUG.toInt();
+                default -> minimumLevel = Level.INFO.toInt();
             }
-            addInfo("LogLevel has been set to " + logLevel + "(" + logLevel + ")");
 
             URI uri = URI.create(logURLString);
             IO.Options options = IO.Options.builder()
                     .setAuth(Collections.singletonMap("token", jwt))
                     .build();
-
             socket = IO.socket(uri, options);
             socket.connect();
 
@@ -89,39 +80,44 @@ public class SocketAppender extends AppenderBase<ILoggingEvent> {
             System.out.println(e.getMessage());
             addError("Could not initialize socket appender", e);
             active = false;
-            return;
         }
     }
 
     @Override
     protected void append(ILoggingEvent event) {
 
-        if (minimumLevel > event.getLevel().toInt()) {
+        if (minimumLevel > event.getLevel().toInt() || guard || !active) {
             return;
         }
 
-        if (guard || !active) {
-            return;
-        }
         guard = true;
-        // Die müssen alle geprüft werden, ob throwableProxy existiert
-        addInfo(event.getThrowableProxy().getMessage());
-        addInfo(event.getThrowableProxy().getClassName());
-        String stackTrace = "";
-        if (event.getThrowableProxy() != null && event.getThrowableProxy().getStackTraceElementProxyArray() != null) {
-            stackTrace = Arrays.stream(event.getThrowableProxy().getStackTraceElementProxyArray()).map(stackTraceElement -> stackTraceElement.getStackTraceElement().toString()).limit(5).collect(Collectors.joining("<br>"));
-            addInfo("Stacktrace: " + stackTrace);
-        }
-        JSONObject eventData = new JSONObject();
+
         try {
-            eventData
+            JSONObject logData = new JSONObject();
+            logData
                     .put("thread", event.getThreadName())
                     .put("level", event.getLevel().toString())
                     .put("message", event.getFormattedMessage())
                     .put("project", "narcotrack")
                     .put("logger", event.getLoggerName());
-            socket.emit("log", eventData);
-        } catch (JSONException e) {
+            if (event.getLevel().toInt() > Level.INFO.toInt() && event.getThrowableProxy() != null) {
+                IThrowableProxy throwable = event.getThrowableProxy();
+                JSONObject exceptionData = new JSONObject();
+                exceptionData.put("message", throwable.getMessage() != null & !throwable.getMessage().trim().isEmpty() ? throwable.getMessage() : "No message");
+                if (throwable.getStackTraceElementProxyArray() != null) {
+                    exceptionData.put("trace",
+                            Arrays.stream(throwable.getStackTraceElementProxyArray())
+                            .filter(stackTraceElementProxy -> stackTraceElementProxy.getStackTraceElement() != null)
+                                    .limit(10)
+                            .map(stackTraceElementProxy -> stackTraceElementProxy.getStackTraceElement().toString())
+                                    .collect(Collectors.joining("<br>"))
+                    );
+                }
+                logData.put("exception", exceptionData);
+            }
+            System.out.println(logData.toString());
+            socket.emit("log", logData);
+        } catch (Exception e) {
             addWarn("Unable to send log event", e);
         }
         guard = false;
