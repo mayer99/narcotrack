@@ -1,10 +1,11 @@
-package com.mayer.listeners;
+package com.mayer.narcotrack.handler;
 
-import com.mayer.Narcotrack;
-import com.mayer.events.ElectrodeCheckEvent;
+import com.mayer.narcotrack.core.Narcotrack;
+import com.mayer.narcotrack.core.events.ElectrodeCheckEvent;
 import com.mayer.lights.StatusLight;
 import com.mayer.lights.StatusLightColor;
 import com.mayer.lights.StatusLights;
+import com.mayer.narcotrack.core.models.NarcotrackEventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

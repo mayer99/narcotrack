@@ -1,4 +1,6 @@
-package com.mayer;
+package com.mayer.narcotrack.core.handler;
+
+import com.mayer.narcotrack.core.Narcotrack;
 
 public class SerialPortHandler {
 

@@ -1,6 +1,6 @@
-package com.mayer.listeners;
+package com.mayer.narcotrack.core.models;
 
-import com.mayer.events.*;
+import com.mayer.narcotrack.core.events.*;
 
 public interface NarcotrackEventHandler {
 

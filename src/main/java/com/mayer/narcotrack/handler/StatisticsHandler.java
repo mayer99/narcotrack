@@ -1,7 +1,8 @@
-package com.mayer.listeners;
+package com.mayer.narcotrack.handler;
 
-import com.mayer.Narcotrack;
-import com.mayer.frames.NarcotrackFrameType;
+import com.mayer.narcotrack.core.Narcotrack;
+import com.mayer.narcotrack.core.models.NarcotrackFrameType;
+import com.mayer.narcotrack.core.models.NarcotrackEventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

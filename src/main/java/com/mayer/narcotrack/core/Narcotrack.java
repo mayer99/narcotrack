@@ -1,10 +1,15 @@
-package com.mayer;
+package com.mayer.narcotrack.core;
 
 import com.fazecast.jSerialComm.SerialPort;
-import com.mayer.events.*;
-import com.mayer.frames.NarcotrackFrameType;
+import com.mayer.narcotrack.core.events.*;
+import com.mayer.narcotrack.core.handler.BackupFileHandler;
+import com.mayer.narcotrack.core.models.NarcotrackFrameType;
 import com.mayer.lights.StatusLights;
-import com.mayer.listeners.*;
+import com.mayer.narcotrack.core.models.NarcotrackEventHandler;
+import com.mayer.narcotrack.handler.ElectrodeDisconnectedListener;
+import com.mayer.narcotrack.handler.MariaDatabaseHandler;
+import com.mayer.narcotrack.handler.StatisticsHandler;
+import com.mayer.narcotrack.handler.StatusLightsHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

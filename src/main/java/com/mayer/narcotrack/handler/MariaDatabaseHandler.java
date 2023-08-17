@@ -1,15 +1,16 @@
-package com.mayer.listeners;
+package com.mayer.narcotrack.handler;
 
-import com.mayer.Narcotrack;
-import com.mayer.events.CurrentAssessmentEvent;
-import com.mayer.events.EEGEvent;
-import com.mayer.events.ElectrodeCheckEvent;
-import com.mayer.events.PowerSpectrumEvent;
-import com.mayer.events.RemainsEvent;
-import com.mayer.frames.CurrentAssessment;
-import com.mayer.frames.ElectrodeCheck;
-import com.mayer.frames.PowerSpectrum;
-import com.mayer.frames.Remains;
+import com.mayer.narcotrack.core.Narcotrack;
+import com.mayer.narcotrack.core.events.CurrentAssessmentEvent;
+import com.mayer.narcotrack.core.events.EEGEvent;
+import com.mayer.narcotrack.core.events.ElectrodeCheckEvent;
+import com.mayer.narcotrack.core.events.PowerSpectrumEvent;
+import com.mayer.narcotrack.core.events.RemainsEvent;
+import com.mayer.narcotrack.core.frames.CurrentAssessment;
+import com.mayer.narcotrack.core.frames.ElectrodeCheck;
+import com.mayer.narcotrack.core.frames.PowerSpectrum;
+import com.mayer.narcotrack.core.frames.Remains;
+import com.mayer.narcotrack.core.models.NarcotrackEventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

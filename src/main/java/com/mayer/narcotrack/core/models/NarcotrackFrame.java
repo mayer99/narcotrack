@@ -1,4 +1,4 @@
-package com.mayer.frames;
+package com.mayer.narcotrack.core.models;
 
 import java.nio.ByteBuffer;
 

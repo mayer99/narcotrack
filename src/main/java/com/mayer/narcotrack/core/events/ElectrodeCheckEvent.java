@@ -1,7 +1,7 @@
-package com.mayer.events;
+package com.mayer.narcotrack.core.events;
 
-import com.mayer.listeners.NarcotrackEventHandler;
-import com.mayer.frames.ElectrodeCheck;
+import com.mayer.narcotrack.core.models.NarcotrackEventHandler;
+import com.mayer.narcotrack.core.frames.ElectrodeCheck;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;

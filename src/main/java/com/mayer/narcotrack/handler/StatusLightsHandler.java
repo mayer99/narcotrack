@@ -1,9 +1,10 @@
-package com.mayer.listeners;
+package com.mayer.narcotrack.handler;
 
-import com.mayer.Narcotrack;
+import com.mayer.narcotrack.core.Narcotrack;
 import com.mayer.lights.StatusLight;
 import com.mayer.lights.StatusLightColor;
 import com.mayer.lights.StatusLights;
+import com.mayer.narcotrack.core.models.NarcotrackEventHandler;
 
 public class StatusLightsHandler implements NarcotrackEventHandler {
 
