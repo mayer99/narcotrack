@@ -1,4 +1,4 @@
-package com.mayer;
+package com.mayer.listeners;
 
 import com.mayer.events.*;
 

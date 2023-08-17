@@ -1,8 +1,6 @@
 package com.mayer.listeners;
 
 import com.mayer.Narcotrack;
-import com.mayer.NarcotrackEventHandler;
-import com.mayer.events.CurrentAssessmentEvent;
 import com.mayer.events.ElectrodeCheckEvent;
 import com.mayer.lights.StatusLight;
 import com.mayer.lights.StatusLightColor;
@@ -10,9 +8,7 @@ import com.mayer.lights.StatusLights;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 
 public class ElectrodeDisconnectedListener implements NarcotrackEventHandler {
 

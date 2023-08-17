@@ -1,7 +1,5 @@
 package com.mayer.frames;
 
-import com.mayer.NarcotrackFrameType;
-
 import java.nio.ByteBuffer;
 
 public abstract class NarcotrackFrame {

@@ -1,7 +1,6 @@
 package com.mayer.events;
 
-import com.mayer.NarcotrackEventHandler;
-import com.mayer.NarcotrackFrameType;
+import com.mayer.listeners.NarcotrackEventHandler;
 import com.mayer.frames.EEG;
 
 import java.nio.ByteBuffer;

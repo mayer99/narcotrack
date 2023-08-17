@@ -3,7 +3,7 @@ plugins {
     id 'org.hidetake.ssh' version '2.11.2'
 }
 
-group = 'com.mayer99'
+group = 'com.mayer'
 version '1.0.0'
 
 repositories {
@@ -19,16 +19,64 @@ remotes {
 
 }
 
-jar {
+tasks.register('deployUberJar', Jar) {
+    group = "remote"
     manifest {
-        attributes "Main-Class": "com.mayer.Narcotrack"
+        attributes (
+                "Main-Class": "com.mayer.Narcotrack"
+        )
     }
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
     doLast {
         ssh.run {
             session(remotes.pi) {
-                put from: file('build/libs/narcotrack-1.0.0.jar'), into: '/home/pi'
+                put from: file("$buildDir/libs/Narcotrack-1.0.0.jar"), into: '/home/pi/app'
+            }
+
+        }
+    }
+}
+
+tasks.register('deploySlimJar', Jar) {
+    group = "remote"
+    manifest {
+        attributes (
+                "Main-Class": "com.mayer.Narcotrack",
+                "Class-Path": configurations.runtimeClasspath.collect {"lib/$it.name" }.join(' ')
+        )
+    }
+    with jar
+    doLast {
+        ssh.run {
+            session(remotes.pi) {
+                put from: file("$buildDir/libs/Narcotrack-1.0.0.jar"), into: '/home/pi/app'
+            }
+
+        }
+    }
+}
+
+tasks.register('execute') {
+    group = "remote"
+    doLast {
+        ssh.run {
+            session(remotes.pi) {
+                execute 'sudo java -jar /home/pi/app/JAVALEDsClassic-1.0.0.jar', pty: true, ignoreError: true
+            }
+
+        }
+    }
+
+}
+
+tasks.register('deployDependencies') {
+    group = "remote"
+    doLast {
+        ssh.run {
+            session(remotes.pi) {
+                put from: configurations.runtimeClasspath, into: '/home/pi/app/lib'
             }
 
         }
@@ -38,12 +86,10 @@ jar {
 dependencies {
     implementation 'com.fazecast:jSerialComm:2.9.3'
     implementation 'org.mariadb.jdbc:mariadb-java-client:3.1.2'
-    implementation 'commons-net:commons-net:3.8.0'
     implementation 'io.socket:socket.io-client:2.1.0'
     implementation 'ch.qos.logback:logback-core:1.4.6'
     implementation 'org.slf4j:slf4j-parent:2.0.5'
     implementation 'ch.qos.logback:logback-classic:1.4.6'
-    implementation 'org.projectlombok:lombok:1.18.26'
     implementation 'com.pi4j:pi4j-core:2.3.0'
     implementation 'com.pi4j:pi4j-plugin-raspberrypi:2.3.0'
     implementation 'com.pi4j:pi4j-plugin-pigpio:2.3.0'

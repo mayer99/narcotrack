@@ -2,12 +2,9 @@ package com.mayer;
 
 import com.fazecast.jSerialComm.SerialPort;
 import com.mayer.events.*;
+import com.mayer.frames.NarcotrackFrameType;
 import com.mayer.lights.StatusLights;
-import com.mayer.listeners.EEGMonitorHandler;
-import com.mayer.listeners.ElectrodeDisconnectedListener;
-import com.mayer.listeners.MariaDatabaseHandler;
-import com.mayer.listeners.StatisticsHandler;
-import lombok.Getter;
+import com.mayer.listeners.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,12 +29,10 @@ public class Narcotrack {
 
     private SerialPort serialPort;
     private final ByteBuffer buffer;
-    @Getter
     private final Instant startTime;
     private final long startTimeReference;
     private int intervalsWithoutData = 0;
     private final BackupFileHandler backupFileHandler;
-    @Getter
     private final StatusLights statusLights;
 
     private Narcotrack() {
@@ -67,8 +62,8 @@ public class Narcotrack {
 
         MariaDatabaseHandler mariaDatabaseHandler = new MariaDatabaseHandler(this);
         ElectrodeDisconnectedListener electrodeDisconnectedListener = new ElectrodeDisconnectedListener(this);
-        //EEGMonitorHandler eegMonitorHandler = new EEGMonitorHandler();
         StatisticsHandler statisticsHandler = new StatisticsHandler();
+        StatusLightsHandler statusLightsHandler = new StatusLightsHandler(this);
     }
 
     class SerialPortShutdownHook extends Thread {
@@ -240,5 +235,13 @@ public class Narcotrack {
         ElectrodeCheckEvent.getEventHandlers().add(handler);
         RemainsEvent.getEventHandlers().add(handler);
         HANDLERS.add(handler);
+    }
+
+    public Instant getStartTime() {
+        return startTime;
+    }
+
+    public StatusLights getStatusLights() {
+        return statusLights;
     }
 }

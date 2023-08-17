@@ -1,4 +1,4 @@
-package com.mayer;
+package com.mayer.frames;
 
 
 import java.util.Arrays;

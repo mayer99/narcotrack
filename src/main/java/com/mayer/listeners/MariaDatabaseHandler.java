@@ -1,7 +1,6 @@
 package com.mayer.listeners;
 
 import com.mayer.Narcotrack;
-import com.mayer.NarcotrackEventHandler;
 import com.mayer.events.CurrentAssessmentEvent;
 import com.mayer.events.EEGEvent;
 import com.mayer.events.ElectrodeCheckEvent;
@@ -10,7 +9,7 @@ import com.mayer.events.RemainsEvent;
 import com.mayer.frames.CurrentAssessment;
 import com.mayer.frames.ElectrodeCheck;
 import com.mayer.frames.PowerSpectrum;
-import com.mayer.Remains;
+import com.mayer.frames.Remains;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

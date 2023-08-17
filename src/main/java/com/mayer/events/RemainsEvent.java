@@ -1,7 +1,7 @@
 package com.mayer.events;
 
-import com.mayer.NarcotrackEventHandler;
-import com.mayer.Remains;
+import com.mayer.listeners.NarcotrackEventHandler;
+import com.mayer.frames.Remains;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;

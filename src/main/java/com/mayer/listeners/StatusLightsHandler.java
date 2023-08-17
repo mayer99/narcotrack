@@ -1,7 +1,6 @@
 package com.mayer.listeners;
 
 import com.mayer.Narcotrack;
-import com.mayer.NarcotrackEventHandler;
 import com.mayer.lights.StatusLight;
 import com.mayer.lights.StatusLightColor;
 import com.mayer.lights.StatusLights;

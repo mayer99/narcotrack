@@ -27,39 +27,27 @@ public class SocketAppender extends AppenderBase<ILoggingEvent> {
     private Socket socket;
 
     public SocketAppender() {
-        String authURLString = System.getenv("NARCOTRACK_AUTH_URL");
-        String logURLString = System.getenv("NARCOTRACK_LOG_URL");
-        String logLevel = System.getenv("NARCOTRACK_LOGLEVEL");
-        if (authURLString == null || authURLString.trim().isEmpty()) {
-            addWarn("Could not load authURLString, is the environment variable set and accessible?");
-            active = false;
-            return;
-        }
-        if (logURLString == null || logURLString.trim().isEmpty()) {
-            addWarn("Could not load logURLString, is the environment variable set and accessible?");
-            active = false;
-            return;
-        }
-        if (logLevel == null || logLevel.trim().isEmpty()) {
-            addWarn("Could not load logLevel, is the environment variable set and accessible?");
-            logLevel = "";
-        }
+
         try {
+            String authURLString = System.getenv("NARCOTRACK_AUTH_URL");
+            String logURLString = System.getenv("NARCOTRACK_LOG_URL");
+            String logLevel = System.getenv("NARCOTRACK_LOGLEVEL");
+            if (authURLString == null || authURLString.trim().isEmpty()) throw new Exception("Could not load authURLString, is the environment variable set and accessible?");
+            if (logURLString == null || logURLString.trim().isEmpty()) throw new Exception("Could not load logURLString, is the environment variable set and accessible?");
+            if (logLevel == null || logLevel.trim().isEmpty()) {
+                addWarn("Could not load logLevel, is the environment variable set and accessible?");
+                logLevel = "";
+            }
             URL url = new URL(authURLString);
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setRequestMethod("GET");
             con.setConnectTimeout(5000);
             con.setReadTimeout(5000);
-            if (con.getResponseCode()  != HttpURLConnection.HTTP_OK) {
-                addError("Received wrong HTTP code from auth backend: " + collectResponse(con.getErrorStream()));
-                active = false;
-                return;
-            }
+            if (con.getResponseCode()  != HttpURLConnection.HTTP_OK) throw new Exception("Received wrong HTTP code from auth backend: " + collectResponse(con.getErrorStream()));
+
             String jwt = collectResponse(con.getInputStream());
             con.disconnect();
-            System.out.println("Before jwt print");
             addInfo("Received JWT: " + jwt);
-            System.out.println("After jwt print");
 
             switch (logLevel) {
                 case "ERROR" -> minimumLevel = Level.ERROR.toInt();
@@ -77,8 +65,7 @@ public class SocketAppender extends AppenderBase<ILoggingEvent> {
 
             active = true;
         } catch (Exception e) {
-            System.out.println(e.getMessage());
-            addError("Could not initialize socket appender", e);
+            addWarn("Could not initialize SocketAppender", e);
             active = false;
         }
     }
@@ -89,34 +76,30 @@ public class SocketAppender extends AppenderBase<ILoggingEvent> {
         if (minimumLevel > event.getLevel().toInt() || guard || !active) {
             return;
         }
-
         guard = true;
 
         try {
-            JSONObject logData = new JSONObject();
-            logData
+            JSONObject data = new JSONObject();
+            data
                     .put("thread", event.getThreadName())
                     .put("level", event.getLevel().toString())
                     .put("message", event.getFormattedMessage())
                     .put("project", "narcotrack")
                     .put("logger", event.getLoggerName());
+
             if (event.getLevel().toInt() > Level.INFO.toInt() && event.getThrowableProxy() != null) {
-                IThrowableProxy throwable = event.getThrowableProxy();
                 JSONObject exceptionData = new JSONObject();
-                exceptionData.put("message", throwable.getMessage() != null & !throwable.getMessage().trim().isEmpty() ? throwable.getMessage() : "No message");
-                if (throwable.getStackTraceElementProxyArray() != null) {
-                    exceptionData.put("trace",
-                            Arrays.stream(throwable.getStackTraceElementProxyArray())
-                            .filter(stackTraceElementProxy -> stackTraceElementProxy.getStackTraceElement() != null)
-                                    .limit(10)
-                            .map(stackTraceElementProxy -> stackTraceElementProxy.getStackTraceElement().toString())
-                                    .collect(Collectors.joining("<br>"))
-                    );
+                if (event.getThrowableProxy().getMessage() != null && !event.getThrowableProxy().getMessage().trim().isEmpty()) {
+                    exceptionData.put("message", event.getThrowableProxy().getMessage().trim());
                 }
-                logData.put("exception", exceptionData);
+                if (event.getThrowableProxy().getStackTraceElementProxyArray() != null) {
+                    exceptionData.put("stackTrace", Arrays.stream(event.getThrowableProxy().getStackTraceElementProxyArray()).filter(stackTraceElementProxy -> stackTraceElementProxy.getStackTraceElement() != null).limit(10).map(stackTraceElementProxy -> stackTraceElementProxy.getStackTraceElement().toString()).collect(Collectors.joining("<br>")));
+                }
+                if (exceptionData.length() > 0) {
+                    data.put("exception", exceptionData);
+                }
             }
-            System.out.println(logData.toString());
-            socket.emit("log", logData);
+            socket.emit("log", data);
         } catch (Exception e) {
             addWarn("Unable to send log event", e);
         }
@@ -126,7 +109,7 @@ public class SocketAppender extends AppenderBase<ILoggingEvent> {
     private static String collectResponse(InputStream inputStream) throws IOException {
         BufferedReader in = new BufferedReader(new InputStreamReader(inputStream));
         String inputLine;
-        StringBuffer content = new StringBuffer();
+        StringBuilder content = new StringBuilder();
         while ((inputLine = in.readLine()) != null) {
             content.append(inputLine);
         }

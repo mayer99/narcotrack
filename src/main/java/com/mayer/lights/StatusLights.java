@@ -1,6 +1,5 @@
 package com.mayer.lights;
 
-import com.mayer.Narcotrack;
 import com.pi4j.Pi4J;
 import com.pi4j.context.Context;
 import com.pi4j.io.spi.Spi;
