@@ -50,7 +50,6 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
             electrodeCheckStatement = databaseConnection.prepareStatement("INSERT INTO frame_electrode_check(record_id, recorded_at, imp_1_a, imp_1_b, imp_ref, imp_2_a, imp_2_b, info, chk_sum, raw) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             remainsStatement = databaseConnection.prepareStatement("INSERT INTO remains(record_id, recorded_at, raw) VALUES(?, ?, ?)");
             createRecording();
-            Narcotrack.registerNarcotrackEventListener(this);
         } catch (Exception e) {
             LOGGER.error("Error creating connection, creating prepared statements or insert recording, Exception Message: {}", e.getMessage(), e);
             Narcotrack.rebootPlatform();

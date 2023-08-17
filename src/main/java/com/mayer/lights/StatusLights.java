@@ -11,17 +11,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.EnumMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 
 public class StatusLights {
     private static final Logger LOGGER = LoggerFactory.getLogger(StatusLights.class);
 
-    private final ArrayBlockingQueue<EnumMap<StatusLight, StatusLightAnimation>> animations;
+    private final ArrayBlockingQueue<Set<Map.Entry<StatusLight, StatusLightAnimation>>> animations;
     private final EnumMap<StatusLight, StatusLightAnimation> scheduledAnimations;
     private final boolean active;
 
     public StatusLights() {
-        animations = new ArrayBlockingQueue<EnumMap<StatusLight, StatusLightAnimation>>(10);
+        animations = new ArrayBlockingQueue<>(10);
         scheduledAnimations = new EnumMap<>(StatusLight.class);
         try {
             PiGpio gpio = PiGpio.newNativeInstance();
@@ -57,7 +59,7 @@ public class StatusLights {
 
     public synchronized void render() {
         if (!active) return;
-        animations.offer(scheduledAnimations.clone());
+        animations.offer(scheduledAnimations.entrySet());
         scheduledAnimations.clear();
     }
 }

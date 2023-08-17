@@ -11,7 +11,6 @@ public class StatisticsHandler implements NarcotrackEventHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(StatisticsHandler.class);
 
     public StatisticsHandler() {
-        Narcotrack.registerNarcotrackEventListener(this);
     }
     private int counter = 0;
     @Override

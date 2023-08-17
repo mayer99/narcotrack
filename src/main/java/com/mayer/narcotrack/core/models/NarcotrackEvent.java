@@ -1,4 +1,4 @@
-package com.mayer.narcotrack.core.events;
+package com.mayer.narcotrack.core.models;
 
 public abstract class NarcotrackEvent {
 

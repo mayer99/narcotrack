@@ -5,6 +5,7 @@ import com.pi4j.io.spi.Spi;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 
 public class StatusLightsAnimator implements Runnable {
@@ -17,13 +18,12 @@ public class StatusLightsAnimator implements Runnable {
     private static final long ANIMATION_FRAME_DURATION = 25;
     private static final long ANIMATION_PAUSE_DURATION = 400;
 
-
     private final Spi spi;
-    private final ArrayBlockingQueue<EnumMap<StatusLight, StatusLightAnimation>> animationQueue;
+    private final ArrayBlockingQueue<Set<Map.Entry<StatusLight, StatusLightAnimation>>> animationQueue;
     private final EnumMap<StatusLight, StatusLightColor> state;
     private final byte[] buffer;
 
-    public StatusLightsAnimator(Spi spi, ArrayBlockingQueue<EnumMap<StatusLight, StatusLightAnimation>> animationQueue) {
+    public StatusLightsAnimator(Spi spi, ArrayBlockingQueue<Set<Map.Entry<StatusLight, StatusLightAnimation>>> animationQueue) {
         this.spi = spi;
         this.animationQueue = animationQueue;
         this.buffer = new byte[StatusLight.values().length * 3];
@@ -44,11 +44,11 @@ public class StatusLightsAnimator implements Runnable {
         }
         while(true) {
             try {
-                EnumMap<StatusLight, StatusLightAnimation> animations = animationQueue.take();
+                Set<Map.Entry<StatusLight, StatusLightAnimation>> animations = animationQueue.take();
                 // First phase
                 for (int i = 0; i < ANIMATION_FRAMES; i++) {
                     float brightness = i / (ANIMATION_FRAMES - 1.0f);
-                    for (Map.Entry<StatusLight, StatusLightAnimation> animation: animations.entrySet()) {
+                    for (Map.Entry<StatusLight, StatusLightAnimation> animation: animations) {
                         if (state.get(animation.getKey()).equals(animation.getValue().getColor()) && animation.getValue().getType().equals(StatusLightAnimationType.COLOR_CHANGE)) return;
                         if (state.get(animation.getKey()).equals(StatusLightColor.OFF)) {
                             setStatusLight(animation.getKey(), animation.getValue().getColor(), brightness);
@@ -64,7 +64,7 @@ public class StatusLightsAnimator implements Runnable {
                 // Second phase
                 for (int i = 0; i < ANIMATION_FRAMES; i++) {
                     float brightness = i / (ANIMATION_FRAMES - 1.0f);
-                    for (Map.Entry<StatusLight, StatusLightAnimation> animation: animations.entrySet()) {
+                    for (Map.Entry<StatusLight, StatusLightAnimation> animation: animations) {
                         if (state.get(animation.getKey()).equals(animation.getValue().getColor()) && animation.getValue().getType().equals(StatusLightAnimationType.COLOR_CHANGE)) return;
                         if (!state.get(animation.getKey()).equals(StatusLightColor.OFF)) {
                             setStatusLight(animation.getKey(), animation.getValue().getColor(), brightness);
@@ -77,11 +77,11 @@ public class StatusLightsAnimator implements Runnable {
                 }
 
                 // Third phase
-                if (animations.entrySet().stream().anyMatch(animation -> !state.get(animation.getKey()).equals(StatusLightColor.OFF) && animation.getValue().getType().equals(StatusLightAnimationType.PULSE))) {
+                if (animations.stream().anyMatch(animation -> !state.get(animation.getKey()).equals(StatusLightColor.OFF) && animation.getValue().getType().equals(StatusLightAnimationType.PULSE))) {
                     Thread.sleep(ANIMATION_PAUSE_DURATION);
                     for (int i = 0; i < ANIMATION_FRAMES; i++) {
                         float brightness = i / (ANIMATION_FRAMES - 1.0f);
-                        for (Map.Entry<StatusLight, StatusLightAnimation> animation: animations.entrySet()) {
+                        for (Map.Entry<StatusLight, StatusLightAnimation> animation: animations) {
                             if (!state.get(animation.getKey()).equals(StatusLightColor.OFF) && animation.getValue().getType().equals(StatusLightAnimationType.PULSE)) {
                                 setStatusLight(animation.getKey(), animation.getValue().getColor(), 1 - brightness);
                             }
@@ -91,7 +91,7 @@ public class StatusLightsAnimator implements Runnable {
                     }
                 }
 
-                for (Map.Entry<StatusLight, StatusLightAnimation> animation: animations.entrySet()) {
+                for (Map.Entry<StatusLight, StatusLightAnimation> animation: animations) {
                     state.replace(animation.getKey(), animation.getValue().getType().equals(StatusLightAnimationType.COLOR_CHANGE) ? animation.getValue().getColor() : StatusLightColor.OFF);
                 }
             } catch (InterruptedException ignored) {

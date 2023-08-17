@@ -1,5 +1,7 @@
 package com.mayer.narcotrack.core.events;
 
+import com.mayer.narcotrack.core.Narcotrack;
+import com.mayer.narcotrack.core.models.NarcotrackEvent;
 import com.mayer.narcotrack.core.models.NarcotrackEventHandler;
 import com.mayer.narcotrack.core.frames.PowerSpectrum;
 
@@ -8,18 +10,12 @@ import java.util.ArrayList;
 
 public class PowerSpectrumEvent extends NarcotrackEvent {
 
-    private static final ArrayList<NarcotrackEventHandler> HANDLERS = new ArrayList<>();
-
     private final PowerSpectrum powerSpectrum;
 
     public PowerSpectrumEvent(int time, ByteBuffer buffer) {
         super(time);
         powerSpectrum = new PowerSpectrum(buffer);
-        HANDLERS.forEach(handler -> handler.onPowerSpectrumEvent(this));
-    }
-
-    public static ArrayList<NarcotrackEventHandler> getEventHandlers() {
-        return HANDLERS;
+        Narcotrack.getHandlers().forEach(handler -> handler.onPowerSpectrumEvent(this));
     }
 
     public PowerSpectrum getData() {

@@ -12,7 +12,6 @@ public class StatusLightsHandler implements NarcotrackEventHandler {
 
     public StatusLightsHandler(Narcotrack narcotrack) {
         statusLights = narcotrack.getStatusLights();
-        Narcotrack.registerNarcotrackEventListener(this);
     }
 
     @Override

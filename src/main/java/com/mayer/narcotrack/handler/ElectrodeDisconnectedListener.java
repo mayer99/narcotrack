@@ -19,7 +19,6 @@ public class ElectrodeDisconnectedListener implements NarcotrackEventHandler {
 
     public ElectrodeDisconnectedListener(Narcotrack narcotrack) {
         statusLights = narcotrack.getStatusLights();
-        Narcotrack.registerNarcotrackEventListener(this);
     }
 
     @Override

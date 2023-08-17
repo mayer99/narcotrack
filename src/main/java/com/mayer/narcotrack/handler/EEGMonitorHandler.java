@@ -1,6 +1,5 @@
 package com.mayer.narcotrack.handler;
 
-import com.mayer.narcotrack.core.Narcotrack;
 import com.mayer.narcotrack.core.models.NarcotrackEventHandler;
 import com.mayer.narcotrack.core.events.EEGEvent;
 import io.socket.client.IO;
@@ -37,7 +36,6 @@ public class EEGMonitorHandler implements NarcotrackEventHandler {
                     .build();
             socket = IO.socket(uri, options);
             socket.connect();
-            Narcotrack.registerNarcotrackEventListener(this);
         } catch (Exception e) {
             LOGGER.error("Could not initialize EEGMonitorHandler. Exception: {}", e.getMessage(), e);
         }
