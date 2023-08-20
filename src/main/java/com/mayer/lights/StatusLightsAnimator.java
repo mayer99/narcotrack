@@ -2,10 +2,7 @@ package com.mayer.lights;
 
 import com.pi4j.io.spi.Spi;
 
-import java.util.Arrays;
-import java.util.EnumMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 
 public class StatusLightsAnimator implements Runnable {
