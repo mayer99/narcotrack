@@ -11,7 +11,7 @@
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
-    <appender name="SOCKET" class="com.mayer.logging.SocketAppender">
+    <appender name="SOCKET" class="com.mayer.rework.logging.SocketAppender">
     </appender>
 
     <root level="DEBUG">

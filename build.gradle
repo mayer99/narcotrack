@@ -84,8 +84,8 @@ tasks.register('deployDependencies') {
 }
 
 dependencies {
-    implementation 'com.fazecast:jSerialComm:2.9.3'
     implementation 'org.mariadb.jdbc:mariadb-java-client:3.1.2'
+    implementation 'com.fazecast:jSerialComm:2.9.3'
     implementation 'io.socket:socket.io-client:2.1.0'
     implementation 'ch.qos.logback:logback-core:1.4.6'
     implementation 'org.slf4j:slf4j-parent:2.0.5'
