@@ -1,7 +1,6 @@
 package com.mayer99.narcotrack.base.models;
 
 
-import com.mayer.rework.narcotrack.base.events.*;
 import com.mayer99.narcotrack.base.events.*;
 
 public interface NarcotrackEventHandler {

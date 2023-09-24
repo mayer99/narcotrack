@@ -2,7 +2,6 @@ package com.mayer99.narcotrack.base.handler;
 
 import com.fazecast.jSerialComm.SerialPort;
 import com.mayer99.Narcotrack;
-import com.mayer.rework.narcotrack.base.events.*;
 import com.mayer99.narcotrack.base.models.NarcotrackEventHandler;
 import com.mayer99.narcotrack.base.models.NarcotrackFrameType;
 import com.mayer99.narcotrack.base.events.*;
@@ -47,7 +46,7 @@ public class SerialPortHandler {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
         String backupFileName = sdf.format(Date.from(startTime)) + ".bin";
         backupFilePath = Paths.get("backups", backupFileName);
-        LOGGER.info("startTime: {}, backupFile: {}", startTime.toString(), backupFileName);
+        LOGGER.info("startTime: {}, backupFile: {}", startTime, backupFileName);
 
         buffer = ByteBuffer.allocate(50000).order(ByteOrder.LITTLE_ENDIAN);
         backupDataBuffer = ByteBuffer.allocate(100_000).order(ByteOrder.LITTLE_ENDIAN);
