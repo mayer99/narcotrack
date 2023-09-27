@@ -35,9 +35,9 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
     public MariaDatabaseHandler(Narcotrack narcotrack) {
         startTime = narcotrack.getStartTime();
 
-        String DB_URL = System.getenv("NARCOTRACK_DB_URL");
-        String DB_USERNAME = System.getenv("NARCOTRACK_DB_USERNAME");
-        String DB_PASSWORD = System.getenv("NARCOTRACK_DB_PASSWORD");
+        String DB_URL = System.getenv("DB_URL");
+        String DB_USERNAME = System.getenv("DB_USERNAME");
+        String DB_PASSWORD = System.getenv("DB_PASSWORD");
 
         if (DB_URL == null || DB_URL.trim().isEmpty()) {
             LOGGER.error("DB_URL is null, empty or whitespace");
@@ -59,7 +59,7 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
 
         try {
             LOGGER.debug("Connecting to database {}", DB_URL);
-            // "jdbc:mariadb://127.0.0.1:3306/narcotrack
+            // "jdbc:mariadb://127.0.0.1:3306/narcotrack"
             databaseConnection = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD);
             Runtime.getRuntime().addShutdownHook(new DatabaseShutdownHook());
 

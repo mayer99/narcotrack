@@ -23,7 +23,7 @@ tasks.register('deployUberJar', Jar) {
     group = "remote"
     manifest {
         attributes (
-                "Main-Class": "com.mayer.Narcotrack"
+                "Main-Class": "com.mayer99.Narcotrack"
         )
     }
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
@@ -63,7 +63,7 @@ tasks.register('execute') {
     doLast {
         ssh.run {
             session(remotes.pi) {
-                execute 'sudo java -jar /home/pi/app/JAVALEDsClassic-1.0.0.jar', pty: true, ignoreError: true
+                execute 'sudo java -jar /home/pi/app/Narcotrack-1.0.0.jar'
             }
 
         }

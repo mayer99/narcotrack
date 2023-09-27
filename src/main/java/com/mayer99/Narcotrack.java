@@ -1,12 +1,14 @@
 package com.mayer99;
 
 import com.mayer99.lights.StatusLights;
+import com.mayer99.lights.enums.StatusLight;
+import com.mayer99.lights.enums.StatusLightColor;
+import com.mayer99.logging.SocketAppender;
 import com.mayer99.narcotrack.base.models.NarcotrackEventHandler;
 import com.mayer99.narcotrack.base.handler.SerialPortHandler;
 import com.mayer99.narcotrack.handlers.ElectrodeDisconnectedListener;
 import com.mayer99.narcotrack.handlers.MariaDatabaseHandler;
 import com.mayer99.narcotrack.handlers.StatisticsHandler;
-import com.mayer99.narcotrack.handlers.StatusLightsHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,12 +31,12 @@ public class Narcotrack {
         LOGGER.info("StartTime: {}", startTime.toString());
 
         statusLights = new StatusLights();
+        statusLights.setColorChangeAnimation(StatusLight.NETWORK, SocketAppender.active ? StatusLightColor.INFO : StatusLightColor.WARNING);
         new SerialPortHandler(this);
 
         HANDLERS.add(new MariaDatabaseHandler(this));
         HANDLERS.add(new ElectrodeDisconnectedListener(this));
         HANDLERS.add(new StatisticsHandler());
-        HANDLERS.add(new StatusLightsHandler(this));
     }
 
     public static void rebootPlatform() {

@@ -3,12 +3,17 @@ package com.mayer99.lights;
 import com.mayer99.lights.enums.StatusLight;
 import com.mayer99.lights.enums.StatusLightAnimationType;
 import com.mayer99.lights.enums.StatusLightColor;
+import com.mayer99.narcotrack.base.handler.SerialPortHandler;
 import com.pi4j.io.spi.Spi;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 
 public class StatusLightsAnimator implements Runnable {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(StatusLightsAnimator.class);
 
     private static final int STARTUP_ANIMATION_LIGHT_OVERLAP = 6;
     private static final long STARTUP_ANIMATION_FRAME_DURATION = 25;
@@ -40,8 +45,7 @@ public class StatusLightsAnimator implements Runnable {
     public void run() {
         try {
             runStartupAnimation();
-        } catch (InterruptedException ignored) {
-        }
+        } catch (InterruptedException ignored) {}
         while(true) {
             try {
                 Set<Map.Entry<StatusLight, StatusLightAnimation>> animations = animationQueue.take();

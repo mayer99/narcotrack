@@ -16,7 +16,7 @@ import java.util.Collections;
 public class SocketAppender extends AppenderBase<ILoggingEvent> {
 
     private int minimumLevel;
-    private boolean active;
+    public static boolean active;
     private boolean guard;
     private Socket socket;
     private Log.LogBuilder logBuilder;

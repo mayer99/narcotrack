@@ -2,6 +2,9 @@ package com.mayer99.narcotrack.base.handler;
 
 import com.fazecast.jSerialComm.SerialPort;
 import com.mayer99.Narcotrack;
+import com.mayer99.lights.StatusLights;
+import com.mayer99.lights.enums.StatusLight;
+import com.mayer99.lights.enums.StatusLightColor;
 import com.mayer99.narcotrack.base.models.NarcotrackEventHandler;
 import com.mayer99.narcotrack.base.models.NarcotrackFrameType;
 import com.mayer99.narcotrack.base.events.*;
@@ -36,6 +39,7 @@ public class SerialPortHandler {
     private final ByteBuffer buffer;
     private final ByteBuffer backupDataBuffer;
     private final Path backupFilePath;
+    private final StatusLights statusLights;
     private int backupDataCounter = 0;
     private SerialPort serialPort;
     private int intervalsWithoutData = 0;
@@ -50,6 +54,8 @@ public class SerialPortHandler {
 
         buffer = ByteBuffer.allocate(50000).order(ByteOrder.LITTLE_ENDIAN);
         backupDataBuffer = ByteBuffer.allocate(100_000).order(ByteOrder.LITTLE_ENDIAN);
+
+        statusLights = narcotrack.getStatusLights();
 
         if (!initializeSerialPort()) {
             LOGGER.error("Rebooting because of error initializing serial port");
@@ -112,6 +118,8 @@ public class SerialPortHandler {
                     Narcotrack.rebootPlatform();
                 }
             }
+            statusLights.setPulseAnimation(StatusLight.STATUS, intervalsWithoutData >= 60 ? StatusLightColor.ERROR : StatusLightColor.WARNING);
+            statusLights.render();
             return;
         }
         intervalsWithoutData = 0;
@@ -131,6 +139,8 @@ public class SerialPortHandler {
             if (bytesAvailable > buffer.capacity()) {
                 LOGGER.warn("bytesAvailable would overfill the entire buffer space. Moving bytesAvailable to remains");
                 new RemainsEvent(time, data);
+                statusLights.setPulseAnimation(StatusLight.STATUS, StatusLightColor.ERROR);
+                statusLights.render();
                 return;
             }
         }
@@ -173,6 +183,8 @@ public class SerialPortHandler {
         } else {
             buffer.clear();
         }
+        statusLights.setPulseAnimation(StatusLight.STATUS, StatusLightColor.INFO);
+        statusLights.render();
         Narcotrack.getHandlers().forEach(NarcotrackEventHandler::onEndOfInterval);
     }
 

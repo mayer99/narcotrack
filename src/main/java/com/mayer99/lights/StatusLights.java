@@ -35,7 +35,7 @@ public class StatusLights {
                     .add(PiGpioSpiProvider.newInstance(gpio))
                     .build();
             SpiConfig spiConfig = Spi.newConfigBuilder(pi4j)
-                    .address(0)
+                    .address(1)
                     .mode(SpiMode.MODE_0)
                     .baud(1_000_000)
                     .build();
@@ -47,7 +47,6 @@ public class StatusLights {
             return;
         }
         active = true;
-        LOGGER.info("StatusLights active");
     }
 
     public synchronized void setPulseAnimation(StatusLight statusLight, StatusLightColor color) {
@@ -62,7 +61,7 @@ public class StatusLights {
 
     public synchronized void render() {
         if (!active) return;
-        animations.offer(scheduledAnimations.entrySet());
+        animations.offer(scheduledAnimations.clone().entrySet());
         scheduledAnimations.clear();
     }
 }
