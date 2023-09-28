@@ -62,8 +62,10 @@ public class ElectrodeDisconnectedListener implements NarcotrackEventHandler {
             return;
         }
         if (Math.abs(imp1a - impRef) > 3 || Math.abs(imp1b - impRef) > 3 || Math.abs(imp1a - imp1b) > 3) {
-            statusLights.setColorChangeAnimation(StatusLight.ELECTRODES, StatusLightColor.ERROR);
+            statusLights.setColorChangeAnimation(StatusLight.ELECTRODES, StatusLightColor.WARNING);
             LOGGER.warn("Received ElectrodeCheck with impendance difference between two electrodes");
+            return;
         }
+        statusLights.setColorChangeAnimation(StatusLight.ELECTRODES, StatusLightColor.OFF);
     }
 }

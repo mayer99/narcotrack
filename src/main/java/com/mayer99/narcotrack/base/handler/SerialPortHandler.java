@@ -40,8 +40,8 @@ public class SerialPortHandler {
     private final ByteBuffer backupDataBuffer;
     private final Path backupFilePath;
     private final StatusLights statusLights;
-    private int backupDataCounter = 0;
     private SerialPort serialPort;
+    private int backupDataCounter = 0;
     private int intervalsWithoutData = 0;
 
 
@@ -50,18 +50,14 @@ public class SerialPortHandler {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
         String backupFileName = sdf.format(Date.from(startTime)) + ".bin";
         backupFilePath = Paths.get("backups", backupFileName);
-        LOGGER.info("startTime: {}, backupFile: {}", startTime, backupFileName);
+        LOGGER.info("Backup file is called {}", backupFileName);
 
-        buffer = ByteBuffer.allocate(50000).order(ByteOrder.LITTLE_ENDIAN);
+        buffer = ByteBuffer.allocate(50_000).order(ByteOrder.LITTLE_ENDIAN);
         backupDataBuffer = ByteBuffer.allocate(100_000).order(ByteOrder.LITTLE_ENDIAN);
 
         statusLights = narcotrack.getStatusLights();
 
-        if (!initializeSerialPort()) {
-            LOGGER.error("Rebooting because of error initializing serial port");
-            Narcotrack.rebootPlatform();
-            return;
-        }
+        if (!initializeSerialPort()) Narcotrack.rebootPlatform();
 
         ScheduledExecutorService ses = Executors.newScheduledThreadPool(1);
         ses.scheduleAtFixedRate(this::readSerialData, 1, 1, TimeUnit.SECONDS);
@@ -87,7 +83,7 @@ public class SerialPortHandler {
         } catch (Exception e) {
             LOGGER.error("Could not connect to serial port", e);
             try {
-                LOGGER.error("Available serial ports are {}", Arrays.stream(SerialPort.getCommPorts()).map(SerialPort::getSystemPortPath).collect(Collectors.joining(" ")));
+                LOGGER.error("Available serial ports are {}", Arrays.stream(SerialPort.getCommPorts()).map(SerialPort::getSystemPortPath).collect(Collectors.joining(", ")));
             } catch (Exception ex) {
                 LOGGER.error("Could not create debug message showing CommPorts", ex);
             }
@@ -98,10 +94,11 @@ public class SerialPortHandler {
     class SerialPortShutdownHook extends Thread {
         @Override
         public void run() {
-            LOGGER.warn("Shutdown Hook triggered, closing serial port");
+            LOGGER.warn("SerialPortShutdownHook triggered");
             if (serialPort != null && serialPort.isOpen()) {
+                LOGGER.info("Closing serialPort");
                 serialPort.closePort();
-                LOGGER.info("Closed serial port ");
+                LOGGER.info("Closed serialPort");
             }
         }
     }
@@ -114,12 +111,10 @@ public class SerialPortHandler {
             if (intervalsWithoutData%60 == 0) {
                 int minutesWithoutData = intervalsWithoutData/60;
                 LOGGER.warn("No data received for {} {}", minutesWithoutData, minutesWithoutData == 1 ? "min" : "mins");
-                if (minutesWithoutData >= 3) {
-                    Narcotrack.rebootPlatform();
-                }
+                if (minutesWithoutData >= 3) Narcotrack.rebootPlatform();
             }
             statusLights.setPulseAnimation(StatusLight.STATUS, intervalsWithoutData >= 60 ? StatusLightColor.ERROR : StatusLightColor.WARNING);
-            statusLights.render();
+            Narcotrack.getHandlers().forEach(NarcotrackEventHandler::onEndOfInterval);
             return;
         }
         intervalsWithoutData = 0;
@@ -130,17 +125,17 @@ public class SerialPortHandler {
         addToBackupBuffer(data);
 
 
-        if (bytesAvailable + buffer.position() > buffer.capacity()) {
+        if (data.length + buffer.position() > buffer.capacity()) {
             LOGGER.warn("bytesAvailable would overfill the remaining buffer space. Moving existing bytes in buffer to remains (bytesAvailable: {}, buffer.position(): {}, buffer.capacity(): {}).", bytesAvailable, buffer.position(), buffer.capacity());
             byte[] bufferData = new byte[buffer.position()];
             buffer.get(bufferData);
             buffer.clear();
             new RemainsEvent(time, bufferData);
-            if (bytesAvailable > buffer.capacity()) {
+            if (data.length > buffer.capacity()) {
                 LOGGER.warn("bytesAvailable would overfill the entire buffer space. Moving bytesAvailable to remains");
                 new RemainsEvent(time, data);
                 statusLights.setPulseAnimation(StatusLight.STATUS, StatusLightColor.ERROR);
-                statusLights.render();
+                Narcotrack.getHandlers().forEach(NarcotrackEventHandler::onEndOfInterval);
                 return;
             }
         }
@@ -160,7 +155,7 @@ public class SerialPortHandler {
                 if (buffer.position() != i) {
                     byte[] remains = new byte[i - buffer.position()];
                     buffer.get(remains);
-                    LOGGER.warn("There are reamins before frame of type {} number {}", frame, frame.getCount());
+                    LOGGER.warn("There are remains before frame of type {} number {}", frame, frame.getCount());
                     new RemainsEvent(time, remains);
                 }
                 buffer.position(i);
@@ -184,18 +179,17 @@ public class SerialPortHandler {
             buffer.clear();
         }
         statusLights.setPulseAnimation(StatusLight.STATUS, StatusLightColor.INFO);
-        statusLights.render();
         Narcotrack.getHandlers().forEach(NarcotrackEventHandler::onEndOfInterval);
     }
 
     private void addToBackupBuffer(byte[] data) {
         if (data.length + backupDataBuffer.position() > backupDataBuffer.capacity()) {
             backupDataCounter = 0;
-            LOGGER.warn("Adding new bytes to backup to the existing buffer would lead to an overflow. Moving contents of the buffer to the backup file");
+            LOGGER.warn("Adding new bytes to backupBuffer would cause an overflow. Moving contents of the buffer to the backup file");
             byte[] bufferData = new byte[backupDataBuffer.position()];
             backupDataBuffer.position(0);
             backupDataBuffer.get(bufferData);
-            backupDataBuffer.position(0);
+            backupDataBuffer.clear();
             saveToBackupFile(bufferData);
             if (data.length > backupDataBuffer.capacity()) {
                 LOGGER.warn("New bytes are longer than the buffer size. Moving new data to the backup file");
@@ -212,7 +206,7 @@ public class SerialPortHandler {
             byte[] backupData = new byte[backupDataBuffer.position()];
             backupDataBuffer.position(0);
             backupDataBuffer.get(backupData);
-            backupDataBuffer.position(0);
+            backupDataBuffer.clear();
             saveToBackupFile(backupData);
         }
     }

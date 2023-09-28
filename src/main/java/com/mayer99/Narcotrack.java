@@ -9,6 +9,7 @@ import com.mayer99.narcotrack.base.handler.SerialPortHandler;
 import com.mayer99.narcotrack.handlers.ElectrodeDisconnectedListener;
 import com.mayer99.narcotrack.handlers.MariaDatabaseHandler;
 import com.mayer99.narcotrack.handlers.StatisticsHandler;
+import com.mayer99.narcotrack.handlers.StatusLightsRenderHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +38,7 @@ public class Narcotrack {
         HANDLERS.add(new MariaDatabaseHandler(this));
         HANDLERS.add(new ElectrodeDisconnectedListener(this));
         HANDLERS.add(new StatisticsHandler());
+        HANDLERS.add(new StatusLightsRenderHandler(this));
     }
 
     public static void rebootPlatform() {

@@ -21,6 +21,7 @@ import java.util.Arrays;
 public class MariaDatabaseHandler implements NarcotrackEventHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MariaDatabaseHandler.class);
+    private static final int MAX_INTERVALS = 10;
 
     private final Instant startTime;
     private Connection databaseConnection;
@@ -78,9 +79,10 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
 
     class DatabaseShutdownHook extends Thread {
         public void run() {
-            LOGGER.warn("Shutting down database");
+            LOGGER.warn("DatabaseShutdownHook triggered");
             try {
                 if (databaseConnection != null && !databaseConnection.isClosed()) {
+                    LOGGER.info("Shutting down database");
                     databaseConnection.close();
                     LOGGER.info("Closed DB connection");
                 }
@@ -122,10 +124,13 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
         } catch (SQLException e) {
             LOGGER.error("Error processing EEG data", e);
             try {
+                LOGGER.info("Cleared eegBatch");
                 eegStatement.clearBatch();
-                eegCounter = 0;
             } catch (SQLException ex) {
                 LOGGER.error("Could not clear EEG Batch", ex);
+            } finally {
+                eegCounter = 0;
+                hasEEGs = false;
             }
         }
     }
@@ -182,6 +187,8 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
                 currentAssessmentStatement.clearBatch();
             } catch (SQLException ex) {
                 LOGGER.error("Could not clear currentAssessment Batch", ex);
+            } finally {
+                hasCurrentAssessments = false;
             }
         }
     }
@@ -261,20 +268,14 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
             Remains data = event.getData();
             remainsStatement.setInt(1, recordId);
             remainsStatement.setLong(2, event.getTime());
-            if (data.getChunks().size() > 1) {
-                for (byte[] chunk: data.getChunks()) {
-                    remainsStatement.setBytes(3, chunk);
-                    remainsStatement.addBatch();
-                }
-                remainsStatement.executeBatch();
-                LOGGER.debug("Sent Remains batch");
-            } else {
-                remainsStatement.setBytes(3, data.getChunks().get(0));
-                remainsStatement.executeUpdate();
-                LOGGER.debug("Sent Remains");
+            for (byte[] chunk: data.getChunks()) {
+                remainsStatement.setBytes(3, chunk);
+                remainsStatement.addBatch();
             }
+            remainsStatement.executeBatch();
+            LOGGER.debug("Sent Remains batch");
         } catch (SQLException e) {
-            LOGGER.error("Error processing Remains data, Exception Message: {}", e.getMessage(), e);
+            LOGGER.error("Error processing Remains data", e);
         }
     }
 
@@ -282,7 +283,6 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
     public void onEndOfInterval() {
         eegCounter = 0;
         intervalCounter++;
-        int MAX_INTERVALS = 10;
         if (intervalCounter >= MAX_INTERVALS) {
             intervalCounter = 0;
             try {
