@@ -9,7 +9,6 @@ public class ElectrodeCheck extends NarcotrackFrame {
 
     private final float imp1a, imp1b, impRef, imp2a, imp2b;
     private final byte info;
-    private final byte[] chkSum;
 
     public ElectrodeCheck(ByteBuffer buffer) {
         super(NarcotrackFrameType.ELECTRODE_CHECK, buffer);
@@ -20,8 +19,6 @@ public class ElectrodeCheck extends NarcotrackFrame {
         imp2a = buffer.getFloat();
         imp2b = buffer.getFloat();
         info = buffer.get();
-        chkSum = new byte[2];
-        buffer.get(chkSum);
     }
 
     public float getImp1a() {
@@ -46,10 +43,6 @@ public class ElectrodeCheck extends NarcotrackFrame {
 
     public byte getInfo() {
         return info;
-    }
-
-    public byte[] getChkSum() {
-        return chkSum;
     }
 
 }

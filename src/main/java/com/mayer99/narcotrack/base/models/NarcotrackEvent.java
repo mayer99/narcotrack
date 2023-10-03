@@ -2,13 +2,13 @@ package com.mayer99.narcotrack.base.models;
 
 public abstract class NarcotrackEvent {
 
-    private final long time;
+    private final int time;
 
-    public NarcotrackEvent(long time) {
+    public NarcotrackEvent(int time) {
         this.time = time;
     }
 
-    public long getTime() {
+    public int getTime() {
         return time;
     }
 

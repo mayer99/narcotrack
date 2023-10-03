@@ -2,9 +2,7 @@ package com.mayer99.narcotrack.base.handler;
 
 import com.fazecast.jSerialComm.SerialPort;
 import com.mayer99.Narcotrack;
-import com.mayer99.lights.StatusLights;
-import com.mayer99.lights.enums.StatusLight;
-import com.mayer99.lights.enums.StatusLightColor;
+import com.mayer99.lights.StatusLightController;
 import com.mayer99.narcotrack.base.models.NarcotrackEventHandler;
 import com.mayer99.narcotrack.base.models.NarcotrackFrameType;
 import com.mayer99.narcotrack.base.events.*;
@@ -39,7 +37,7 @@ public class SerialPortHandler {
     private final ByteBuffer buffer;
     private final ByteBuffer backupDataBuffer;
     private final Path backupFilePath;
-    private final StatusLights statusLights;
+    private final StatusLightController statusLights;
     private SerialPort serialPort;
     private int backupDataCounter = 0;
     private int intervalsWithoutData = 0;
@@ -113,13 +111,20 @@ public class SerialPortHandler {
                 LOGGER.warn("No data received for {} {}", minutesWithoutData, minutesWithoutData == 1 ? "min" : "mins");
                 if (minutesWithoutData >= 3) Narcotrack.rebootPlatform();
             }
-            statusLights.setPulseAnimation(StatusLight.STATUS, intervalsWithoutData >= 60 ? StatusLightColor.ERROR : StatusLightColor.WARNING);
+            //statusLights.setPulseAnimation(StatusLight.STATUS, intervalsWithoutData >= 60 ? StatusLightColor.ERROR : StatusLightColor.WARNING);
+            //statusLights.render();
             Narcotrack.getHandlers().forEach(NarcotrackEventHandler::onEndOfInterval);
             return;
         }
         intervalsWithoutData = 0;
 
-        long time = Duration.between(startTime, Instant.now()).getSeconds();
+        int time;
+        try {
+            time = Math.toIntExact(Duration.between(startTime, Instant.now()).getSeconds());
+        } catch (ArithmeticException e) {
+            LOGGER.error("Could not cast time duration to int. startTime was: {}", startTime, e);
+            time = -1;
+        }
         byte[] data = new byte[bytesAvailable];
         serialPort.readBytes(data, data.length);
         addToBackupBuffer(data);
@@ -134,7 +139,8 @@ public class SerialPortHandler {
             if (data.length > buffer.capacity()) {
                 LOGGER.warn("bytesAvailable would overfill the entire buffer space. Moving bytesAvailable to remains");
                 new RemainsEvent(time, data);
-                statusLights.setPulseAnimation(StatusLight.STATUS, StatusLightColor.ERROR);
+                //statusLights.setPulseAnimation(StatusLight.STATUS, StatusLightColor.ERROR);
+                //statusLights.render();
                 Narcotrack.getHandlers().forEach(NarcotrackEventHandler::onEndOfInterval);
                 return;
             }
@@ -145,7 +151,7 @@ public class SerialPortHandler {
         for(int i = 0; i < lastPosition; i++) {
             if (i + NarcotrackFrameType.SHORTEST_FRAME_TYPE.getLength() > lastPosition) break;
             if (buffer.get(i) != START_BYTE) continue;
-            if (i + 3 >= lastPosition) continue;
+            if (i + 6 >= lastPosition) continue; // length, identifier, chkSum and tail
             for (NarcotrackFrameType frame: NarcotrackFrameType.values()) {
                 if (buffer.get(i + 3) != frame.getIdentifier()) continue;
                 if (i + frame.getLength() > lastPosition) continue;
@@ -178,7 +184,8 @@ public class SerialPortHandler {
         } else {
             buffer.clear();
         }
-        statusLights.setPulseAnimation(StatusLight.STATUS, StatusLightColor.INFO);
+        //statusLights.setPulseAnimation(StatusLight.STATUS, StatusLightColor.INFO);
+        //statusLights.render();
         Narcotrack.getHandlers().forEach(NarcotrackEventHandler::onEndOfInterval);
     }
 

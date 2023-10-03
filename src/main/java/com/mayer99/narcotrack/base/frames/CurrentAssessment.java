@@ -21,12 +21,11 @@ public class CurrentAssessment extends NarcotrackFrame {
     private final byte[] info;
     private final float bsrShort1, bsrMedium1;
     private final byte[] reserved1;
-    private final short stiCh1, stiCh2;
+    private final byte stiCh1, stiCh2;
     private final float bsrShort2, bsrMedium2;
     private final short ibiCh1, ibiCh2;
     private final float aEEGMin1, aEEGMax1, aEEGMin2, aEEGMax2;
     private final byte[] reserved2;
-    private final byte[] chkSum;
 
     public CurrentAssessment(ByteBuffer buffer) {
         super (NarcotrackFrameType.CURRENT_ASSESSMENT, buffer);
@@ -70,8 +69,6 @@ public class CurrentAssessment extends NarcotrackFrame {
         aEEGMax2 = buffer.getFloat();
         reserved2 = new byte[4];
         buffer.get(reserved2);
-        chkSum = new byte[2];
-        buffer.get(chkSum);
     }
 
     public short getEegIndex() {
@@ -166,11 +163,11 @@ public class CurrentAssessment extends NarcotrackFrame {
         return this.reserved1;
     }
 
-    public short getStiCh1() {
+    public byte getStiCh1() {
         return this.stiCh1;
     }
 
-    public short getStiCh2() {
+    public byte getStiCh2() {
         return this.stiCh2;
     }
 
@@ -208,10 +205,6 @@ public class CurrentAssessment extends NarcotrackFrame {
 
     public byte[] getReserved2() {
         return this.reserved2;
-    }
-
-    public byte[] getChkSum() {
-        return this.chkSum;
     }
 
 }

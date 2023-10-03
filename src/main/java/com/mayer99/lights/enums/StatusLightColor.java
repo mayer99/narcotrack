@@ -6,14 +6,15 @@ public enum StatusLightColor {
     WARNING(255, 70, 0),
     ERROR(255, 0, 0);
 
+    private final static float brightness = 0.3f;
     private final int red;
     private final int green;
     private final int blue;
 
     StatusLightColor(int red, int green, int blue) {
-        this.red = red;
-        this.green = green;
-        this.blue = blue;
+        this.red = Math.round(red * brightness);
+        this.green = Math.round(green * brightness);
+        this.blue = Math.round(blue * brightness);
     }
 
     public int getRed() {

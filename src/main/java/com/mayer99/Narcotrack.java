@@ -1,15 +1,11 @@
 package com.mayer99;
 
-import com.mayer99.lights.StatusLights;
-import com.mayer99.lights.enums.StatusLight;
-import com.mayer99.lights.enums.StatusLightColor;
-import com.mayer99.logging.SocketAppender;
+import com.mayer99.lights.StatusLightController;
 import com.mayer99.narcotrack.base.models.NarcotrackEventHandler;
 import com.mayer99.narcotrack.base.handler.SerialPortHandler;
 import com.mayer99.narcotrack.handlers.ElectrodeDisconnectedListener;
 import com.mayer99.narcotrack.handlers.MariaDatabaseHandler;
 import com.mayer99.narcotrack.handlers.StatisticsHandler;
-import com.mayer99.narcotrack.handlers.StatusLightsRenderHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +19,7 @@ public class Narcotrack {
     private static final ArrayList<NarcotrackEventHandler> HANDLERS = new ArrayList<>();
 
     private final Instant startTime;
-    private final StatusLights statusLights;
+    private final StatusLightController statusLights;
 
     private Narcotrack() {
         LOGGER.info("Application starting...");
@@ -31,14 +27,14 @@ public class Narcotrack {
         startTime = Instant.now();
         LOGGER.info("StartTime: {}", startTime.toString());
 
-        statusLights = new StatusLights();
-        statusLights.setColorChangeAnimation(StatusLight.NETWORK, SocketAppender.active ? StatusLightColor.INFO : StatusLightColor.WARNING);
+        statusLights = null;
+        new StatusLightController();
+        // statusLights.setColorChangeAnimation(StatusLight.NETWORK, SocketAppender.active ? StatusLightColor.INFO : StatusLightColor.WARNING);
         new SerialPortHandler(this);
 
         HANDLERS.add(new MariaDatabaseHandler(this));
         HANDLERS.add(new ElectrodeDisconnectedListener(this));
         HANDLERS.add(new StatisticsHandler());
-        HANDLERS.add(new StatusLightsRenderHandler(this));
     }
 
     public static void rebootPlatform() {
@@ -63,7 +59,7 @@ public class Narcotrack {
         return startTime;
     }
 
-    public StatusLights getStatusLights() {
+    public StatusLightController getStatusLights() {
         return statusLights;
     }
 

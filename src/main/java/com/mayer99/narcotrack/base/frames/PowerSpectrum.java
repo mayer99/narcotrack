@@ -9,7 +9,6 @@ public class PowerSpectrum extends NarcotrackFrame {
 
     private final int[] spectrum1, spectrum2;
     private final byte info;
-    private final byte[] chkSum;
 
     public PowerSpectrum(ByteBuffer buffer) {
         super(NarcotrackFrameType.POWER_SPECTRUM, buffer);
@@ -23,8 +22,6 @@ public class PowerSpectrum extends NarcotrackFrame {
             spectrum2[i] = Short.toUnsignedInt(buffer.getShort());
         }
         info = buffer.get();
-        chkSum = new byte[2];
-        buffer.get(chkSum);
     }
 
     public int[] getSpectrum1() {
@@ -37,10 +34,6 @@ public class PowerSpectrum extends NarcotrackFrame {
 
     public byte getInfo() {
         return info;
-    }
-
-    public byte[] getChkSum() {
-        return chkSum;
     }
 
 }
