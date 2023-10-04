@@ -1,6 +1,10 @@
 package com.mayer99;
 
 import com.mayer99.lights.StatusLightController;
+import com.mayer99.lights.enums.StatusLight;
+import com.mayer99.lights.enums.StatusLightColor;
+import com.mayer99.lights.models.StatusLightAnimation;
+import com.mayer99.logging.SocketAppender;
 import com.mayer99.narcotrack.base.models.NarcotrackEventHandler;
 import com.mayer99.narcotrack.base.handler.SerialPortHandler;
 import com.mayer99.narcotrack.handlers.ElectrodeDisconnectedListener;
@@ -27,9 +31,11 @@ public class Narcotrack {
         startTime = Instant.now();
         LOGGER.info("StartTime: {}", startTime.toString());
 
-        statusLights = null;
-        new StatusLightController();
-        // statusLights.setColorChangeAnimation(StatusLight.NETWORK, SocketAppender.active ? StatusLightColor.INFO : StatusLightColor.WARNING);
+        statusLights = new StatusLightController();
+        if (SocketAppender.active) {
+            LOGGER.info("SocketAppender is active, changing StatusLight NETWORK to INFO");
+            statusLights.animate(new StatusLightAnimation(StatusLight.NETWORK, StatusLightColor.INFO));
+        }
         new SerialPortHandler(this);
 
         HANDLERS.add(new MariaDatabaseHandler(this));

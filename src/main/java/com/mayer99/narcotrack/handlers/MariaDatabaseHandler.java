@@ -275,7 +275,7 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
                 remainsStatement.addBatch();
             }
             remainsStatement.executeBatch();
-            LOGGER.debug("Sent Remains batch");
+            LOGGER.debug("Sent Remains batch#############################################################");
         } catch (SQLException e) {
             LOGGER.error("Error processing Remains data", e);
         }

@@ -6,7 +6,6 @@ import com.mayer99.lights.StatusLightController;
 import com.mayer99.lights.enums.StatusLight;
 import com.mayer99.lights.enums.StatusLightColor;
 import com.mayer99.lights.models.StatusLightAnimation;
-import com.mayer99.logging.SocketAppender;
 import com.mayer99.narcotrack.base.models.NarcotrackEventHandler;
 import com.mayer99.narcotrack.base.models.NarcotrackFrameType;
 import com.mayer99.narcotrack.base.events.*;
@@ -58,12 +57,6 @@ public class SerialPortHandler {
         backupDataBuffer = ByteBuffer.allocate(100_000).order(ByteOrder.LITTLE_ENDIAN);
 
         statusLights = narcotrack.getStatusLights();
-        if (SocketAppender.active) {
-            LOGGER.info("SocketAppender is active, changing StatusLight NETWORK to INFO");
-            statusLights.animate(new StatusLightAnimation(StatusLight.NETWORK, StatusLightColor.INFO));
-        }
-
-
         if (!initializeSerialPort()) Narcotrack.rebootPlatform();
 
         ScheduledExecutorService ses = Executors.newScheduledThreadPool(1);
@@ -163,7 +156,7 @@ public class SerialPortHandler {
                 if (buffer.get(i + 3) != frame.getIdentifier()) continue;
                 if (i + frame.getLength() > lastPosition) continue;
                 if (buffer.get(i + frame.getLength() - 1) != END_BYTE) continue;
-                LOGGER.debug("Found a frame of type {} in the buffer", frame);
+                //LOGGER.debug("Found a frame of type {} in the buffer", frame);
                 frame.count();
                 if (buffer.position() != i) {
                     byte[] remains = new byte[i - buffer.position()];
@@ -185,6 +178,7 @@ public class SerialPortHandler {
         }
         if (lastPosition > buffer.position()) {
             byte[] endFragment = new byte[lastPosition - buffer.position()];
+            LOGGER.debug("endFragment of length {} found, adding to the beginning", endFragment.length);
             buffer.get(endFragment);
             buffer.clear();
             buffer.put(endFragment);

@@ -14,6 +14,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class ElectrodeDisconnectedListener implements NarcotrackEventHandler {
 
@@ -62,11 +64,16 @@ public class ElectrodeDisconnectedListener implements NarcotrackEventHandler {
             });
             return;
         }
-        if (Math.abs(imp1a - impRef) > 3 || Math.abs(imp1b - impRef) > 3 || Math.abs(imp1a - imp1b) > 3) {
+        if (Math.abs(imp1a - impRef) > 3.0f || Math.abs(imp1b - impRef) > 3.0f || Math.abs(imp1a - imp1b) > 3.0f) {
             statusLights.animate(new StatusLightAnimation(StatusLight.ELECTRODES, StatusLightColor.WARNING));
             LOGGER.warn("Received ElectrodeCheck with impendance difference between two electrodes");
             return;
         }
-        statusLights.animate(new StatusLightAnimation(StatusLight.ELECTRODES, StatusLightColor.OFF));
+        if (impedances.values().stream().anyMatch(impedance -> impedance >= 5.0f)) {
+            statusLights.animate(new StatusLightAnimation(StatusLight.ELECTRODES, StatusLightColor.WARNING));
+            LOGGER.warn("Received ElectrodeCheck with high impedance of at least one electrode");
+            return;
+        }
+        statusLights.animate(new StatusLightAnimation(StatusLight.ELECTRODES, StatusLightColor.INFO));
     }
 }

@@ -2,11 +2,11 @@ package com.mayer99.lights.enums;
 
 public enum StatusLightColor {
     OFF(0, 0, 0),
-    INFO(0, 255, 0),
+    INFO(0, 200, 0),
     WARNING(255, 70, 0),
     ERROR(255, 0, 0);
 
-    private final static float brightness = 0.3f;
+    private final static float brightness = 0.5f;
     private final int red;
     private final int green;
     private final int blue;
