@@ -1,4 +1,4 @@
-package com.mayer99.lights.animations;
+package com.mayer99.lights.models;
 
 import com.mayer99.lights.enums.StatusLight;
 import com.mayer99.lights.enums.StatusLightColor;

@@ -1,7 +1,7 @@
 package com.mayer99.lights.tasks;
 
 import com.mayer99.lights.StatusLightController;
-import com.mayer99.lights.animations.StatusLightAnimation;
+import com.mayer99.lights.models.StatusLightAnimation;
 import com.mayer99.lights.enums.StatusLight;
 import com.mayer99.lights.enums.StatusLightColor;
 import org.slf4j.Logger;
@@ -25,9 +25,13 @@ public class ColorChangeAnimationTask extends StatusLightAnimationTask {
     @Override
     public void run() {
         while (true) {
+            int incrementDuration = Math.round(((float) ((DURATION - PAUSE) / FREQUENCY)) * 0.5f);
             try {
                 StatusLightAnimation animation = queue.take();
-                int incrementDuration = Math.round(((float) ((DURATION - PAUSE) / FREQUENCY)) * 0.5f);
+                if (color.equals(animation.getColor())) {
+                    LOGGER.debug("Skipping ColorChange animation of {} to {}, light already has the same color", animation.getLight().name(), animation.getColor().name());
+                    continue;
+                }
                 for (int i = 0; i < FREQUENCY; i++) {
                     controller.setStatusLight(light, color, 1.0f - i / (FREQUENCY - 1.0f));
                     Thread.sleep(incrementDuration);

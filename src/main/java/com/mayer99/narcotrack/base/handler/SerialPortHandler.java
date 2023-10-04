@@ -3,6 +3,10 @@ package com.mayer99.narcotrack.base.handler;
 import com.fazecast.jSerialComm.SerialPort;
 import com.mayer99.Narcotrack;
 import com.mayer99.lights.StatusLightController;
+import com.mayer99.lights.enums.StatusLight;
+import com.mayer99.lights.enums.StatusLightColor;
+import com.mayer99.lights.models.StatusLightAnimation;
+import com.mayer99.logging.SocketAppender;
 import com.mayer99.narcotrack.base.models.NarcotrackEventHandler;
 import com.mayer99.narcotrack.base.models.NarcotrackFrameType;
 import com.mayer99.narcotrack.base.events.*;
@@ -54,6 +58,11 @@ public class SerialPortHandler {
         backupDataBuffer = ByteBuffer.allocate(100_000).order(ByteOrder.LITTLE_ENDIAN);
 
         statusLights = narcotrack.getStatusLights();
+        if (SocketAppender.active) {
+            LOGGER.info("SocketAppender is active, changing StatusLight NETWORK to INFO");
+            statusLights.animate(new StatusLightAnimation(StatusLight.NETWORK, StatusLightColor.INFO));
+        }
+
 
         if (!initializeSerialPort()) Narcotrack.rebootPlatform();
 
@@ -109,10 +118,9 @@ public class SerialPortHandler {
             if (intervalsWithoutData%60 == 0) {
                 int minutesWithoutData = intervalsWithoutData/60;
                 LOGGER.warn("No data received for {} {}", minutesWithoutData, minutesWithoutData == 1 ? "min" : "mins");
-                if (minutesWithoutData >= 3) Narcotrack.rebootPlatform();
+                if (minutesWithoutData >= 5) Narcotrack.rebootPlatform();
             }
-            //statusLights.setPulseAnimation(StatusLight.STATUS, intervalsWithoutData >= 60 ? StatusLightColor.ERROR : StatusLightColor.WARNING);
-            //statusLights.render();
+            statusLights.animate(new StatusLightAnimation(StatusLight.STATUS, intervalsWithoutData >= 180 ? StatusLightColor.ERROR : StatusLightColor.WARNING));
             Narcotrack.getHandlers().forEach(NarcotrackEventHandler::onEndOfInterval);
             return;
         }
@@ -139,8 +147,7 @@ public class SerialPortHandler {
             if (data.length > buffer.capacity()) {
                 LOGGER.warn("bytesAvailable would overfill the entire buffer space. Moving bytesAvailable to remains");
                 new RemainsEvent(time, data);
-                //statusLights.setPulseAnimation(StatusLight.STATUS, StatusLightColor.ERROR);
-                //statusLights.render();
+                statusLights.animate(new StatusLightAnimation(StatusLight.STATUS, StatusLightColor.WARNING));
                 Narcotrack.getHandlers().forEach(NarcotrackEventHandler::onEndOfInterval);
                 return;
             }
@@ -184,8 +191,7 @@ public class SerialPortHandler {
         } else {
             buffer.clear();
         }
-        //statusLights.setPulseAnimation(StatusLight.STATUS, StatusLightColor.INFO);
-        //statusLights.render();
+        statusLights.animate(new StatusLightAnimation(StatusLight.STATUS, StatusLightColor.INFO));
         Narcotrack.getHandlers().forEach(NarcotrackEventHandler::onEndOfInterval);
     }
 

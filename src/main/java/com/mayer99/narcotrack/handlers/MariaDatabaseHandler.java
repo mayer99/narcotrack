@@ -120,7 +120,6 @@ public class MariaDatabaseHandler implements NarcotrackEventHandler {
             eegStatement.addBatch();
             if (!hasEEGs) hasEEGs = true;
             eegCounter++;
-            //LOGGER.debug("Created EEG batch");
         } catch (SQLException e) {
             LOGGER.error("Error processing EEG data", e);
             try {

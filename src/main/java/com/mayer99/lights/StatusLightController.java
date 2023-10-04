@@ -1,6 +1,6 @@
 package com.mayer99.lights;
 
-import com.mayer99.lights.animations.StatusLightAnimation;
+import com.mayer99.lights.models.StatusLightAnimation;
 import com.mayer99.lights.enums.StatusLight;
 import com.mayer99.lights.enums.StatusLightColor;
 import com.mayer99.lights.tasks.ColorChangeAnimationTask;
@@ -64,42 +64,6 @@ public class StatusLightController {
             LOGGER.error("Could not initialize status lights", e);
             active = false;
         }
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(3);
-        scheduler.scheduleAtFixedRate(() -> {
-            animate(new StatusLightAnimation(StatusLight.STATUS, StatusLightColor.INFO));
-            try {
-                Thread.sleep(1500);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            animate(new StatusLightAnimation(StatusLight.STATUS, StatusLightColor.WARNING));
-            try {
-                Thread.sleep(800);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            animate(new StatusLightAnimation(StatusLight.STATUS, StatusLightColor.ERROR));
-        }, 1, 5, TimeUnit.SECONDS);
-        scheduler.scheduleAtFixedRate(() -> {
-            animate(new StatusLightAnimation(StatusLight.NETWORK, StatusLightColor.WARNING));
-            try {
-                Thread.sleep(1200);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            animate(new StatusLightAnimation(StatusLight.NETWORK, StatusLightColor.INFO));
-
-        }, 1, 3, TimeUnit.SECONDS);
-        scheduler.scheduleAtFixedRate(() -> {
-            animate(new StatusLightAnimation(StatusLight.ELECTRODES, StatusLightColor.OFF));
-            try {
-                Thread.sleep(1600);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            animate(new StatusLightAnimation(StatusLight.ELECTRODES, StatusLightColor.WARNING));
-
-        }, 1, 4, TimeUnit.SECONDS);
     }
 
     public synchronized void setStatusLight(StatusLight light, StatusLightColor color, float brightness) {
@@ -137,22 +101,22 @@ public class StatusLightController {
                     for (StatusLight light: StatusLight.values()) {
                         float start = light.getIndex() * STARTUP_OVERLAP;
                         if (progress <= start) {
-                            setStatusLight(light, 0.0f);
+                            setStartupLight(light, 0.0f);
                             continue;
                         }
                         if (progress <= start + adjFadeIn) {
-                            setStatusLight(light, (progress - start) / adjFadeIn);
+                            setStartupLight(light, (progress - start) / adjFadeIn);
                             continue;
                         }
                         if (progress < start + adjFadeIn + adjPause) {
-                            setStatusLight(light, 1.0f);
+                            setStartupLight(light, 1.0f);
                             continue;
                         }
                         if (progress < start + adjFadeIn + adjPause + adjFadeOut) {
-                            setStatusLight(light, 1.0f - (progress - start - adjFadeIn - adjPause) / adjFadeOut);
+                            setStartupLight(light, 1.0f - (progress - start - adjFadeIn - adjPause) / adjFadeOut);
                             continue;
                         }
-                        setStatusLight(light, 0.0f);
+                        setStartupLight(light, 0.0f);
                     }
                     spi.write(buffer);
                     Thread.sleep(incrementDuration);
@@ -163,7 +127,7 @@ public class StatusLightController {
         }
     }
 
-    private void setStatusLight(StatusLight light, float brightness) {
+    private void setStartupLight(StatusLight light, float brightness) {
         int i = light.getIndex() * 3;
         buffer[i] = (byte) (STARTUP_COLOR.getRed() * brightness);
         buffer[i + 1] = (byte) (STARTUP_COLOR.getBlue() * brightness);

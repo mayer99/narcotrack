@@ -2,6 +2,9 @@ package com.mayer99.narcotrack.handlers;
 
 import com.mayer99.Narcotrack;
 import com.mayer99.lights.StatusLightController;
+import com.mayer99.lights.enums.StatusLight;
+import com.mayer99.lights.enums.StatusLightColor;
+import com.mayer99.lights.models.StatusLightAnimation;
 import com.mayer99.narcotrack.base.events.CurrentAssessmentEvent;
 import com.mayer99.narcotrack.base.events.ElectrodeCheckEvent;
 import com.mayer99.narcotrack.base.models.NarcotrackEventHandler;
@@ -51,7 +54,7 @@ public class ElectrodeDisconnectedListener implements NarcotrackEventHandler {
         impedances.put("imp1b", imp1b);
         impedances.put("impRef", impRef);
         if (impedances.values().stream().anyMatch(impedance -> impedance >= 45)) {
-            //statusLights.setColorChangeAnimation(StatusLight.ELECTRODES, StatusLightColor.ERROR);
+            statusLights.animate(new StatusLightAnimation(StatusLight.ELECTRODES, StatusLightColor.ERROR));
             impedances.forEach((name, impedance) -> {
                 if (impedance >= 45) {
                     LOGGER.warn("Received ElectrodeCheck with loose {} Electrode (impedance: {})", name, impedance);
@@ -60,10 +63,10 @@ public class ElectrodeDisconnectedListener implements NarcotrackEventHandler {
             return;
         }
         if (Math.abs(imp1a - impRef) > 3 || Math.abs(imp1b - impRef) > 3 || Math.abs(imp1a - imp1b) > 3) {
-            //statusLights.setColorChangeAnimation(StatusLight.ELECTRODES, StatusLightColor.WARNING);
+            statusLights.animate(new StatusLightAnimation(StatusLight.ELECTRODES, StatusLightColor.WARNING));
             LOGGER.warn("Received ElectrodeCheck with impendance difference between two electrodes");
             return;
         }
-        //statusLights.setColorChangeAnimation(StatusLight.ELECTRODES, StatusLightColor.OFF);
+        statusLights.animate(new StatusLightAnimation(StatusLight.ELECTRODES, StatusLightColor.OFF));
     }
 }

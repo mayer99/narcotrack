@@ -1,6 +1,6 @@
 package com.mayer99.lights.tasks;
 
-import com.mayer99.lights.animations.StatusLightAnimation;
+import com.mayer99.lights.models.StatusLightAnimation;
 import com.mayer99.lights.enums.StatusLight;
 import com.mayer99.lights.StatusLightController;
 import org.slf4j.Logger;
