@@ -32,7 +32,7 @@ public class Narcotrack {
         LOGGER.info("StartTime: {}", startTime.toString());
 
         statusLights = new StatusLightController();
-        if (SocketAppender.active) {
+        if (!SocketAppender.disabled) {
             LOGGER.info("SocketAppender is active, changing StatusLight NETWORK to INFO");
             statusLights.animate(new StatusLightAnimation(StatusLight.NETWORK, StatusLightColor.INFO));
         }
