@@ -9,14 +9,13 @@ import java.util.Objects;
 
 public class Log {
 
-    private final String thread, level, message, project, logger;
+    private final String thread, level, message, logger;
     private final IThrowableProxy throwable;
 
     private Log(String thread, String level, String message, String project, String logger, IThrowableProxy throwable) {
         this.thread = thread;
         this.level = level;
         this.message = message;
-        this.project = project;
         this.logger = logger;
         this.throwable = throwable;
     }
@@ -33,17 +32,13 @@ public class Log {
         return message;
     }
 
-    public String getProject() {
-        return project;
-    }
-
     public String getLogger() {
         return logger;
     }
 
     public JSONObject toJson() throws Exception {
         JSONObject data = new JSONObject();
-        data.put("thread", thread).put("level", level).put("message", message).put("project", project).put("logger", logger);
+        data.put("thread", thread).put("level", level).put("message", message).put("logger", logger);
         if (throwable != null) {
             JSONObject exceptionData = new JSONObject();
             if (throwable.getMessage() != null && !throwable.getMessage().trim().isEmpty()) {
@@ -68,12 +63,11 @@ public class Log {
 
     public static class LogBuilder {
 
-        private final String project;
         private String thread, level, message, logger;
         private IThrowableProxy throwable;
 
-        public LogBuilder(String project) {
-            this.project = project;
+        public LogBuilder() {
+
         }
 
         public LogBuilder setThread(String thread) {
@@ -102,7 +96,7 @@ public class Log {
         }
 
         public Log build() {
-            Log log = new Log(thread, level, message, project, logger, throwable);
+            Log log = new Log(thread, level, message, logger, throwable);
             thread = null;
             level = null;
             message = null;

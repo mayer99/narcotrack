@@ -27,9 +27,9 @@ public class SocketAppender extends AppenderBase<ILoggingEvent> {
             String authURLString = System.getenv("BACKEND_AUTH_URL");
             String logURLString = System.getenv("BACKEND_LOG_URL");
             String logLevel = System.getenv("BACKEND_LOGLEVEL");
-            if (authURLString == null || authURLString.trim().isEmpty()) throw new Exception("Could not load authURLString, is the environment variable set and accessible?");
-            if (logURLString == null || logURLString.trim().isEmpty()) throw new Exception("Could not load logURLString, is the environment variable set and accessible?");
-            if (logLevel == null || logLevel.trim().isEmpty()) {
+            if (isNullEmptyOrWhitespace(authURLString)) throw new Exception("Could not load authURLString, is the environment variable set and accessible?");
+            if (isNullEmptyOrWhitespace(logURLString)) throw new Exception("Could not load logURLString, is the environment variable set and accessible?");
+            if (isNullEmptyOrWhitespace(logLevel)) {
                 addWarn("Could not load logLevel, is the environment variable set and accessible?");
                 logLevel = "";
             }
@@ -57,7 +57,7 @@ public class SocketAppender extends AppenderBase<ILoggingEvent> {
                     .build();
             socket = IO.socket(uri, options);
             socket.connect();
-            logBuilder = new Log.LogBuilder("narcotrack");
+            logBuilder = new Log.LogBuilder();
             active = true;
         } catch (Exception e) {
             addWarn("Could not initialize SocketAppender", e);
@@ -97,5 +97,9 @@ public class SocketAppender extends AppenderBase<ILoggingEvent> {
         }
         in.close();
         return content.toString();
+    }
+
+    public static boolean isNullEmptyOrWhitespace(String value) {
+        return value == null || value.trim().isEmpty();
     }
 }
