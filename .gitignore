@@ -3,4 +3,5 @@
 build
 logs
 out
-src/main/java/com/mayer/playground
+.DS_Store
+/src/main/java/com/mayer99/playground/
