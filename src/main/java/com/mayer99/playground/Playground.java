@@ -15,7 +15,7 @@ public class Playground {
         ScheduledExecutorService ses = Executors.newScheduledThreadPool(1);
         ses.scheduleAtFixedRate(() -> {
             LOGGER.info("Testnachricht ohne wirkliche Relevanz");
-        }, 1, 1, TimeUnit.SECONDS);
+        }, 3, 3, TimeUnit.SECONDS);
     }
 
 }

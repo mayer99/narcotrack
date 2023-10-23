@@ -62,7 +62,7 @@ public class SocketAppender extends AppenderBase<ILoggingEvent> {
     @Override
     protected void append(ILoggingEvent event) {
 
-        if (level.toInt() > event.getLevel().toInt() || guard || disabled) {
+        if (guard || disabled || level.toInt() > event.getLevel().toInt()) {
             return;
         }
         guard = true;
