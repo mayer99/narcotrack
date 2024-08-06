@@ -11,7 +11,7 @@ public class RemainsEvent extends NarcotrackEvent {
     public RemainsEvent(int time, byte[] data) {
         super(time);
         remains = new Remains(data);
-        Narcotrack.getHandlers().forEach(handler -> handler.onRemainsEvent(this));
+        Narcotrack.getHandlers().forEach(handler -> handler.onRemains(this));
     }
 
     public Remains getData() {

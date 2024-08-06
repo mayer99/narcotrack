@@ -28,9 +28,9 @@ public class SocketAppender extends AppenderBase<ILoggingEvent> {
         addInfo("Initializing SocketAppender");
         System.out.println("Initializing  SocketAppender");
         try {
-            String authURLString = loadEnvironmentVariable("BACKEND_AUTH_URL");
-            String logURLString = loadEnvironmentVariable("BACKEND_LOG_URL");
-            String logLevel = loadEnvironmentVariable("BACKEND_LOGLEVEL");
+            String authURLString = loadEnvironmentVariable("NT_BACKEND_AUTH_URL");
+            String logURLString = loadEnvironmentVariable("NT_BACKEND_LOG_URL");
+            String logLevel = loadEnvironmentVariable("NT_BACKEND_LOGLEVEL");
             HttpClient httpClient = HttpClient
                     .newBuilder()
                     .version(HttpClient.Version.HTTP_1_1)

@@ -13,7 +13,7 @@ public class PowerSpectrumEvent extends NarcotrackEvent {
     public PowerSpectrumEvent(int time, ByteBuffer buffer) {
         super(time);
         powerSpectrum = new PowerSpectrum(buffer);
-        Narcotrack.getHandlers().forEach(handler -> handler.onPowerSpectrumEvent(this));
+        Narcotrack.getHandlers().forEach(handler -> handler.onPowerSpectrum(this));
     }
 
     public PowerSpectrum getData() {

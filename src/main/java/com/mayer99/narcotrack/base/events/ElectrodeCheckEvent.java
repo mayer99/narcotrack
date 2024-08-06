@@ -13,7 +13,7 @@ public class ElectrodeCheckEvent extends NarcotrackEvent {
     public ElectrodeCheckEvent(int time, ByteBuffer buffer) {
         super(time);
         electrodeCheck = new ElectrodeCheck(buffer);
-        Narcotrack.getHandlers().forEach(handler -> handler.onElectrodeCheckEvent(this));
+        Narcotrack.getHandlers().forEach(handler -> handler.onElectrodeCheck(this));
     }
 
     public ElectrodeCheck getData() {

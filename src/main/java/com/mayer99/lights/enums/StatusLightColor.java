@@ -1,20 +1,32 @@
 package com.mayer99.lights.enums;
 
 public enum StatusLightColor {
-    OFF(0, 0, 0),
-    INFO(0, 200, 0),
-    WARNING(255, 70, 0),
-    ERROR(255, 0, 0);
+    WHITE(0xFFFFFF),
+    RED(0xFF0000),
+    ORANGE(0xFFA500, 0.8f),
+    YELLOW(0xFFFF00),
+    GREEN(0x00FF00, 0.8f),
+    LIGHT_BLUE(0xADD8E6),
+    BLUE(0x0000FF, 0.8f),
+    PURPLE(0x800080),
+    PINK(0xFFC0CB),
+    OFF(0x000000);
 
-    private final static float brightness = 0.5f;
-    private final int red;
-    private final int green;
-    private final int blue;
+    private static final int RED_MASK = 0xFF0000;
+    private static final int GREEN_MASK = 0x00FF00;
+    private static final int BLUE_MASK = 0x0000FF;
+    private static final float MAX_BRIGHTNESS = 0.8f;
 
-    StatusLightColor(int red, int green, int blue) {
-        this.red = Math.round(red * brightness);
-        this.green = Math.round(green * brightness);
-        this.blue = Math.round(blue * brightness);
+    private final int red, green, blue;
+
+    StatusLightColor(int color, float brightness) {
+        red = (int) (((color & RED_MASK) >> 16) * brightness * MAX_BRIGHTNESS);
+        green = (int) (((color & GREEN_MASK) >> 8) * brightness * MAX_BRIGHTNESS);
+        blue = (int) ((color & BLUE_MASK) * brightness * MAX_BRIGHTNESS);
+    }
+
+    StatusLightColor(int color) {
+        this(color, 1.0f);
     }
 
     public int getRed() {
@@ -28,4 +40,6 @@ public enum StatusLightColor {
     public int getBlue() {
         return blue;
     }
+
 }
+

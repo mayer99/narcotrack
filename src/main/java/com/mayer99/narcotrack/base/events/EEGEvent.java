@@ -13,7 +13,7 @@ public class EEGEvent extends NarcotrackEvent {
     public EEGEvent(int time, ByteBuffer buffer) {
         super(time);
         eeg = new EEG(buffer);
-        Narcotrack.getHandlers().forEach(handler -> handler.onEEGEvent(this));
+        Narcotrack.getHandlers().forEach(handler -> handler.onEEG(this));
     }
 
     public EEG getData() {
