@@ -11,12 +11,12 @@
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
-    <appender name="SOCKET" class="com.mayer99.logging.SocketAppender">
+    <appender name="BACKEND" class="com.mayer99.logging.BackendAppender">
     </appender>
 
     <root level="DEBUG">
         <appender-ref ref="STDOUT" />
         <appender-ref ref="FILE" />
-        <appender-ref ref="SOCKET" />
+        <appender-ref ref="BACKEND" />
     </root>
 </configuration>
