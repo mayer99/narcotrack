@@ -5,8 +5,6 @@ import com.fazecast.jSerialComm.SerialPortInvalidPortException;
 import com.mayer99.narcotrack.NarcotrackEventHandler;
 import com.mayer99.narcotrack.NarcotrackEventManager;
 import com.mayer99.narcotrack.application.NarcotrackApplication;
-import com.mayer99.narcotrack.serial.NarcotrackSerialPortReader;
-import com.pi4j.event.EventManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -138,12 +136,4 @@ public class HardwareHandler implements NarcotrackEventHandler {
         byte[] bytes = command.getBytes();
         serialPort.writeBytes(bytes, bytes.length);
     }
-
-    Ablauf LEDs
-- Start mit Startanimation, keepAlive ist aktuell noch aus, dafür nach 2min Startvorgang rotes Warnlicht
-- ⁠mit Programmstart dann dauerhaftes Leuchten in blau
-- ⁠mit Aufnahmestart fadeout der alten Farbe und start der Loading Animation in grün
-- ⁠bei Problemen mit Elektroden update auf neue Farbe
-- ⁠keepalive läuft parallel zu intervallen, reaktion nach 15s
-- ⁠mit Aufnahmestopp ausschalten der aktuellen animation und wechsel auf blau, keepalive bleibt aber erhalten
 }

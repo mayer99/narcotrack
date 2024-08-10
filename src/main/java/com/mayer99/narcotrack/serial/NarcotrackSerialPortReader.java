@@ -2,11 +2,10 @@ package com.mayer99.narcotrack.serial;
 
 import com.fazecast.jSerialComm.SerialPort;
 import com.fazecast.jSerialComm.SerialPortInvalidPortException;
+import com.mayer99.narcotrack.NarcotrackFrameType;
 import com.mayer99.narcotrack.application.NarcotrackApplication;
 import com.mayer99.narcotrack.NarcotrackEventManager;
 import com.mayer99.narcotrack.events.*;
-import com.mayer99.old.narcotrack.base.events.*;
-import com.mayer99.old.narcotrack.base.models.NarcotrackFrameType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -167,16 +166,16 @@ public class NarcotrackSerialPortReader {
                 if (buffer.position() != i) {
                     byte[] remains = new byte[i - buffer.position()];
                     buffer.get(remains);
-                    LOGGER.warn("There are remains before frame of type {} number {}", frame, frame.getCount());
+                    LOGGER.warn("There are remains before frame of type {}", frame);
                     eventManager.dispatchOnHandleRemains(new HandleRemainsEvent(time, remains));
                 }
                 buffer.position(i);
                 buffer.mark();
                 switch (frame) {
-                    case EEG -> new EEGEvent(time, buffer);
-                    case CURRENT_ASSESSMENT -> new CurrentAssessmentEvent(time, buffer);
-                    case POWER_SPECTRUM -> new PowerSpectrumEvent(time, buffer);
-                    case ELECTRODE_CHECK -> new ElectrodeCheckEvent(time, buffer);
+                    case EEG -> eventManager.dispatchOnReceivedEEG(new ReceivedEEGEvent(time, buffer));
+                    case CURRENT_ASSESSMENT -> eventManager.dispatchOnReceivedCurrentAssessment(new ReceivedCurrentAssessmentEvent(time, buffer));
+                    case POWER_SPECTRUM -> eventManager.dispatchOnReceivedPowerSpectrum(new ReceivedPowerSpectrumEvent(time, buffer));
+                    case ELECTRODE_CHECK -> eventManager.dispatchOnReceivedElectrodeCheck(new ReceivedElectrodeCheckEvent(time, buffer));
                 }
                 buffer.position(i + frame.getLength());
                 i += frame.getLength() - 1;
