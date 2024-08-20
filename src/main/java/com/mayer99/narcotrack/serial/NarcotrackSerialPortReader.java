@@ -2,9 +2,9 @@ package com.mayer99.narcotrack.serial;
 
 import com.fazecast.jSerialComm.SerialPort;
 import com.fazecast.jSerialComm.SerialPortInvalidPortException;
-import com.mayer99.narcotrack.NarcotrackFrameType;
+import com.mayer99.narcotrack.events.NarcotrackFrameType;
 import com.mayer99.narcotrack.application.NarcotrackApplication;
-import com.mayer99.narcotrack.NarcotrackEventManager;
+import com.mayer99.narcotrack.events.NarcotrackEventManager;
 import com.mayer99.narcotrack.events.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,7 +1,5 @@
-package com.mayer99.narcotrack;
+package com.mayer99.narcotrack.events;
 
-
-import com.mayer99.narcotrack.events.*;
 
 import java.time.Instant;
 

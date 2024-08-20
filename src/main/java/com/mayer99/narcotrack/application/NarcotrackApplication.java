@@ -1,7 +1,7 @@
 package com.mayer99.narcotrack.application;
 
-import com.mayer99.narcotrack.NarcotrackEventManager;
-import com.mayer99.narcotrack.handlers.*;
+import com.mayer99.narcotrack.events.NarcotrackEventManager;
+import com.mayer99.narcotrack.events.handlers.*;
 import com.mayer99.narcotrack.serial.NarcotrackSerialPortReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

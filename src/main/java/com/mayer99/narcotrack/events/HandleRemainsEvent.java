@@ -1,7 +1,5 @@
 package com.mayer99.narcotrack.events;
 
-import com.mayer99.narcotrack.NarcotrackEvent;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 

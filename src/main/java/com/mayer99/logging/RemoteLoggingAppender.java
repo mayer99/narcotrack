@@ -22,7 +22,6 @@ public class RemoteLoggingAppender extends AppenderBase<ILoggingEvent> {
     private final HttpClient client;
     private final Properties properties = new Properties();
     private String accessToken;
-    private HttpRequest.Builder logRequestBuilder;
     private boolean disabled = true;
     private boolean guard;
 
@@ -35,11 +34,6 @@ public class RemoteLoggingAppender extends AppenderBase<ILoggingEvent> {
         try {
             loadConfigFile();
             requestAccessToken();
-            logRequestBuilder = HttpRequest.newBuilder()
-                    .uri(URI.create(getProperty("LOGGING_ENDPOINT")))
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + accessToken)
-                    .timeout(Duration.ofSeconds(5));
             disabled = false;
         } catch (JSONException | InterruptedException| SecurityException | IOException | IllegalArgumentException | NullPointerException e) {
             e.printStackTrace();
@@ -58,8 +52,7 @@ public class RemoteLoggingAppender extends AppenderBase<ILoggingEvent> {
             if (event.getThrowableProxy() != null) {
                 IThrowableProxy throwableProxy = event.getThrowableProxy();
                 messages.add(String.format("%s: %s", throwableProxy.getClassName(), throwableProxy.getMessage()));
-                StackTraceElement[] stackTrace = event.getCallerData();
-                for (StackTraceElement element : stackTrace) {
+                for (StackTraceElement element : event.getCallerData()) {
                     messages.add(element.toString());
                 }
             }
@@ -68,22 +61,26 @@ public class RemoteLoggingAppender extends AppenderBase<ILoggingEvent> {
             log.put("level", event.getLevel().toString().toLowerCase());
             log.put("messages", messages.toArray(String[]::new));
             log.put("created_at", System.currentTimeMillis());
-            HttpRequest request = logRequestBuilder
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(getProperty("LOGGING_ENDPOINT")))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + accessToken)
+                    .timeout(Duration.ofSeconds(5))
                     .POST(HttpRequest.BodyPublishers.ofString(log.toString()))
                     .build();
 
             client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenAccept(response -> {
                         if (response.statusCode() != HttpURLConnection.HTTP_CREATED) {
-                            addInfo("Failed to send log event, status code: " + response.statusCode());
+                            addWarn("Failed to send log. Response from Server: " + response.body());
                         }
                     })
                     .exceptionally(e -> {
-                        addError("Failed to send log event", e);
+                        addError("Failed to send log", e);
                         return null;
                     });
         } catch (JSONException e) {
-            addError("Could not parse log object", e);
+            addError("Could not parse log", e);
         }
 
         guard = false;

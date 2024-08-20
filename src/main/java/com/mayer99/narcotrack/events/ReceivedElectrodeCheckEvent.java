@@ -1,8 +1,5 @@
 package com.mayer99.narcotrack.events;
 
-import com.mayer99.narcotrack.NarcotrackFrameType;
-import com.mayer99.narcotrack.NarcotrackSerialDataEvent;
-
 import java.nio.ByteBuffer;
 
 public class ReceivedElectrodeCheckEvent extends NarcotrackSerialDataEvent {

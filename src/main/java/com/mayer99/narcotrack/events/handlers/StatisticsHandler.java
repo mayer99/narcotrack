@@ -1,7 +1,7 @@
-package com.mayer99.narcotrack.handlers;
+package com.mayer99.narcotrack.events.handlers;
 
-import com.mayer99.narcotrack.NarcotrackFrameType;
-import com.mayer99.narcotrack.NarcotrackEventHandler;
+import com.mayer99.narcotrack.events.NarcotrackFrameType;
+import com.mayer99.narcotrack.events.NarcotrackEventHandler;
 import com.mayer99.narcotrack.events.ReceivedCurrentAssessmentEvent;
 import com.mayer99.narcotrack.events.ReceivedEEGEvent;
 import com.mayer99.narcotrack.events.ReceivedElectrodeCheckEvent;

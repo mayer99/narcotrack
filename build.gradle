@@ -3,7 +3,7 @@ plugins {
     id 'org.hidetake.ssh' version '2.11.2'
 }
 
-group = 'com.mayer'
+group = 'com.mayer99'
 version '1.0.0'
 
 repositories {
@@ -12,18 +12,18 @@ repositories {
 
 remotes {
     pi {
-        host = "raspberrypi.local"
-        user = "pi"
-        password = "dp8s5upVM8JLK9hLpfBTsZXFMiK4Ay6mNF4r7MaByyY6B6aBZnm4CUm787AzBgtU"
+        host = System.getenv("RASPBERRYPI_URL")
+        user = System.getenv("RASPBERRYPI_USER")
+        password = System.getenv("RASPBERRYPI_PASSWORD")
     }
 
 }
 
-tasks.register('deployUberJar', Jar) {
+tasks.register('deploy', Jar) {
     group = "remote"
     manifest {
         attributes (
-                "Main-Class": "com.mayer99.Narcotrack"
+                "Main-Class": "com.mayer99.narcotrack.application.NarcotrackApplication"
         )
     }
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
@@ -43,7 +43,7 @@ tasks.register('deploySlimJar', Jar) {
     group = "remote"
     manifest {
         attributes (
-                "Main-Class": "com.mayer.Narcotrack",
+                "Main-Class": "com.mayer99.narcotrack.application.NarcotrackApplication",
                 "Class-Path": configurations.runtimeClasspath.collect {"lib/$it.name" }.join(' ')
         )
     }
@@ -86,11 +86,8 @@ tasks.register('deployDependencies') {
 dependencies {
     implementation 'org.mariadb.jdbc:mariadb-java-client:3.1.2'
     implementation 'com.fazecast:jSerialComm:2.9.3'
-    implementation 'io.socket:socket.io-client:2.1.0'
-    implementation 'ch.qos.logback:logback-core:1.4.6'
+    implementation 'ch.qos.logback:logback-core:1.4.14'
     implementation 'org.slf4j:slf4j-parent:2.0.5'
-    implementation 'ch.qos.logback:logback-classic:1.4.6'
-    implementation 'com.pi4j:pi4j-core:2.3.0'
-    implementation 'com.pi4j:pi4j-plugin-raspberrypi:2.3.0'
-    implementation 'com.pi4j:pi4j-plugin-pigpio:2.3.0'
+    implementation 'ch.qos.logback:logback-classic:1.4.12'
+    implementation 'org.json:json:20240303'
 }

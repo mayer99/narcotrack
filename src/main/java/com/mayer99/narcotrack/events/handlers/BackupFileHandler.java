@@ -1,7 +1,7 @@
-package com.mayer99.narcotrack.handlers;
+package com.mayer99.narcotrack.events.handlers;
 
 
-import com.mayer99.narcotrack.NarcotrackEventHandler;
+import com.mayer99.narcotrack.events.NarcotrackEventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
