@@ -1,14 +1,17 @@
-package com.mayer99.narcotrack.events;
+package com.mayer99.narcotrack.event.events;
+
+import com.mayer99.narcotrack.data.NarcotrackFrame;
+import com.mayer99.narcotrack.event.ReceivedFrameEvent;
 
 import java.nio.ByteBuffer;
 
-public class ReceivedPowerSpectrumEvent extends NarcotrackSerialDataEvent {
+public class ReceivedPowerSpectrumEvent extends ReceivedFrameEvent {
 
     private final int[] spectrum1, spectrum2;
     private final byte info;
 
     public ReceivedPowerSpectrumEvent(int time, ByteBuffer buffer) {
-        super(time, buffer, NarcotrackFrameType.POWER_SPECTRUM);
+        super(time, buffer, NarcotrackFrame.POWER_SPECTRUM);
         buffer.position(buffer.position() + 4);
         spectrum1 = new int[128];
         for (int i = 0; i < 128; i++) {

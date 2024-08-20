@@ -1,5 +1,7 @@
-package com.mayer99.narcotrack.events;
+package com.mayer99.narcotrack.event;
 
+
+import com.mayer99.narcotrack.event.events.*;
 
 import java.time.Instant;
 
@@ -69,7 +71,7 @@ public interface NarcotrackEventHandler {
 
     }
 
-    default void onHandleRemains(HandleRemainsEvent event) {
+    default void onHandleRemains(ReceivedRemainsEvent event) {
 
     }
 }

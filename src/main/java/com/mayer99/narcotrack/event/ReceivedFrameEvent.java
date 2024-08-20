@@ -1,21 +1,22 @@
-package com.mayer99.narcotrack.events;
+package com.mayer99.narcotrack.event;
 
+import com.mayer99.narcotrack.data.NarcotrackFrame;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-public abstract class NarcotrackSerialDataEvent extends NarcotrackEvent {
+public abstract class ReceivedFrameEvent extends NarcotrackEvent {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(NarcotrackSerialDataEvent.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReceivedFrameEvent.class);
 
     protected final int length;
     protected final byte[] raw;
     protected final byte[] checkSum;
     protected final boolean isChecksumValid;
 
-    public NarcotrackSerialDataEvent(int time, ByteBuffer buffer, NarcotrackFrameType frameType) {
+    public ReceivedFrameEvent(int time, ByteBuffer buffer, NarcotrackFrame frameType) {
         super(time);
         length = frameType.getLength();
         raw = new byte[length];

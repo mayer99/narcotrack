@@ -1,13 +1,15 @@
-package com.mayer99.narcotrack.events;
+package com.mayer99.narcotrack.event.events;
+
+import com.mayer99.narcotrack.event.NarcotrackEvent;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class HandleRemainsEvent extends NarcotrackEvent {
+public class ReceivedRemainsEvent extends NarcotrackEvent {
 
     private final ArrayList<byte[]> chunks;
 
-    public HandleRemainsEvent(int time, byte[] data) {
+    public ReceivedRemainsEvent(int time, byte[] data) {
         super(time);
         chunks = new ArrayList<>();
         if (data.length <= 1000) {

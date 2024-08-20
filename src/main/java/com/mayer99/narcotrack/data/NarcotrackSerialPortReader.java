@@ -1,11 +1,10 @@
-package com.mayer99.narcotrack.serial;
+package com.mayer99.narcotrack.data;
 
 import com.fazecast.jSerialComm.SerialPort;
 import com.fazecast.jSerialComm.SerialPortInvalidPortException;
-import com.mayer99.narcotrack.events.NarcotrackFrameType;
+import com.mayer99.narcotrack.event.events.*;
 import com.mayer99.narcotrack.application.NarcotrackApplication;
-import com.mayer99.narcotrack.events.NarcotrackEventManager;
-import com.mayer99.narcotrack.events.*;
+import com.mayer99.narcotrack.event.NarcotrackEventManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -144,7 +143,7 @@ public class NarcotrackSerialPortReader {
                 buffer.get(remains, 0, buffer.position());
                 System.arraycopy(data, 0, remains, buffer.position(), data.length);
                 buffer.clear();
-                eventManager.dispatchOnHandleRemains(new HandleRemainsEvent(time, remains));
+                eventManager.dispatchOnHandleRemains(new ReceivedRemainsEvent(time, remains));
                 eventManager.dispatchOnIntervalStop();
                 return;
             }
@@ -153,13 +152,13 @@ public class NarcotrackSerialPortReader {
             buffer.flip();
             buffer.get(remains);
             buffer.clear();
-            eventManager.dispatchOnHandleRemains(new HandleRemainsEvent(time, remains));
+            eventManager.dispatchOnHandleRemains(new ReceivedRemainsEvent(time, remains));
         }
         buffer.put(data);
         buffer.flip();
         for(int i = 0; i < buffer.limit(); i++) {
             if (buffer.get(i) != START_BYTE) continue;
-            for (NarcotrackFrameType frame: NarcotrackFrameType.values()) {
+            for (NarcotrackFrame frame: NarcotrackFrame.values()) {
                 if (buffer.limit() - i < frame.getLength()) continue;
                 if (buffer.get(i + 3) != frame.getIdentifier()) continue;
                 if (buffer.get(i + frame.getLength() - 1) != END_BYTE) continue;
@@ -167,7 +166,7 @@ public class NarcotrackSerialPortReader {
                     byte[] remains = new byte[i - buffer.position()];
                     buffer.get(remains);
                     LOGGER.warn("There are remains before frame of type {}", frame);
-                    eventManager.dispatchOnHandleRemains(new HandleRemainsEvent(time, remains));
+                    eventManager.dispatchOnHandleRemains(new ReceivedRemainsEvent(time, remains));
                 }
                 buffer.position(i);
                 buffer.mark();

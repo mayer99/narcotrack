@@ -1,5 +1,6 @@
-package com.mayer99.narcotrack.events;
+package com.mayer99.narcotrack.event;
 
+import com.mayer99.narcotrack.event.events.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,7 +98,7 @@ public class NarcotrackEventManager {
         handlers.forEach(handler -> handler.onReceivedElectrodeCheck(event));
     }
 
-    public void dispatchOnHandleRemains(HandleRemainsEvent event) {
+    public void dispatchOnHandleRemains(ReceivedRemainsEvent event) {
         LOGGER.debug("Dispatching onHandleRemains");
         handlers.forEach(handler -> handler.onHandleRemains(event));
     }

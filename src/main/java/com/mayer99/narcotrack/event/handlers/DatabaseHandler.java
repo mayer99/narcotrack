@@ -1,9 +1,9 @@
-package com.mayer99.narcotrack.events.handlers;
+package com.mayer99.narcotrack.event.handlers;
 
 import com.mayer99.narcotrack.application.NarcotrackApplication;
-import com.mayer99.narcotrack.events.NarcotrackEventHandler;
-import com.mayer99.narcotrack.events.NarcotrackEventManager;
-import com.mayer99.narcotrack.events.*;
+import com.mayer99.narcotrack.event.events.*;
+import com.mayer99.narcotrack.event.NarcotrackEventHandler;
+import com.mayer99.narcotrack.event.NarcotrackEventManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -297,7 +297,7 @@ public class DatabaseHandler implements NarcotrackEventHandler {
     }
 
     @Override
-    public void onHandleRemains(HandleRemainsEvent event) {
+    public void onHandleRemains(ReceivedRemainsEvent event) {
         if (!isRecording) {
             LOGGER.error("Could not process HandleRemainsEvent, there is no recording");
             eventManager.dispatchOnRecoverableError();

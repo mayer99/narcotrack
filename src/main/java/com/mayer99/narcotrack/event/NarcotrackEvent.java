@@ -1,4 +1,4 @@
-package com.mayer99.narcotrack.events;
+package com.mayer99.narcotrack.event;
 
 public abstract class NarcotrackEvent {
 

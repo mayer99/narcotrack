@@ -1,14 +1,17 @@
-package com.mayer99.narcotrack.events;
+package com.mayer99.narcotrack.event.events;
+
+import com.mayer99.narcotrack.data.NarcotrackFrame;
+import com.mayer99.narcotrack.event.ReceivedFrameEvent;
 
 import java.nio.ByteBuffer;
 
-public class ReceivedElectrodeCheckEvent extends NarcotrackSerialDataEvent {
+public class ReceivedElectrodeCheckEvent extends ReceivedFrameEvent {
 
     private final float imp1a, imp1b, impRef, imp2a, imp2b;
     private final byte info;
 
     public ReceivedElectrodeCheckEvent(int time, ByteBuffer buffer) {
-        super(time, buffer, NarcotrackFrameType.ELECTRODE_CHECK);
+        super(time, buffer, NarcotrackFrame.ELECTRODE_CHECK);
         buffer.position(buffer.position() + 4);
         imp1a = buffer.getFloat();
         imp1b = buffer.getFloat();

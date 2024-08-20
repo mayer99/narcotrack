@@ -1,10 +1,10 @@
-package com.mayer99.narcotrack.events;
+package com.mayer99.narcotrack.data;
 
 
 import java.util.Arrays;
 import java.util.Comparator;
 
-public enum NarcotrackFrameType {
+public enum NarcotrackFrame {
 
     EEG((byte)0xF1, 40),
     CURRENT_ASSESSMENT((byte)0xF2, 118),
@@ -14,7 +14,7 @@ public enum NarcotrackFrameType {
     private final byte identifier;
     private final int length;
 
-    NarcotrackFrameType(byte identifier, int length) {
+    NarcotrackFrame(byte identifier, int length) {
         this.identifier = identifier;
         this.length = length;
     }
@@ -27,6 +27,6 @@ public enum NarcotrackFrameType {
         return length;
     }
 
-    public static final NarcotrackFrameType SHORTEST_FRAME_TYPE = Arrays.stream(values()).min(Comparator.comparing(NarcotrackFrameType::getLength)).orElse(ELECTRODE_CHECK);
+    public static final NarcotrackFrame SHORTEST_FRAME_TYPE = Arrays.stream(values()).min(Comparator.comparing(NarcotrackFrame::getLength)).orElse(ELECTRODE_CHECK);
 
 }

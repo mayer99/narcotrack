@@ -1,8 +1,11 @@
-package com.mayer99.narcotrack.events;
+package com.mayer99.narcotrack.event.events;
+
+import com.mayer99.narcotrack.data.NarcotrackFrame;
+import com.mayer99.narcotrack.event.ReceivedFrameEvent;
 
 import java.nio.ByteBuffer;
 
-public class ReceivedCurrentAssessmentEvent extends NarcotrackSerialDataEvent {
+public class ReceivedCurrentAssessmentEvent extends ReceivedFrameEvent {
 
     private final short eegIndex, emgIndex;
     private final float deltaRel1, deltaRel2;
@@ -25,7 +28,7 @@ public class ReceivedCurrentAssessmentEvent extends NarcotrackSerialDataEvent {
     private final byte[] reserved2;
 
     public ReceivedCurrentAssessmentEvent(int time, ByteBuffer buffer) {
-        super(time, buffer, NarcotrackFrameType.CURRENT_ASSESSMENT);
+        super(time, buffer, NarcotrackFrame.CURRENT_ASSESSMENT);
         buffer.position(buffer.position() + 4);
         eegIndex = buffer.getShort();
         emgIndex = buffer.getShort();
