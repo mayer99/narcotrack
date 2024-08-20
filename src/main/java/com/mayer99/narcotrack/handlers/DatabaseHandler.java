@@ -325,7 +325,7 @@ public class DatabaseHandler implements NarcotrackEventHandler {
     }
 
     @Override
-    public void onIntervalStop() {
+    public void onIntervalEnd() {
         if (!isRecording) return;
         intervalCounter++;
         if (intervalCounter < 10) return;

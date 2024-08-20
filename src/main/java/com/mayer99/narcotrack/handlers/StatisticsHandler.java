@@ -35,7 +35,7 @@ public class StatisticsHandler implements NarcotrackEventHandler {
     }
 
     @Override
-    public void onIntervalStop() {
+    public void onIntervalEnd() {
         counter++;
         if (counter >= 30) {
             counter = 0;

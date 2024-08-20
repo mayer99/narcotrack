@@ -12,16 +12,16 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-public class HardwareHandler implements NarcotrackEventHandler {
+public class HardwareModuleHandler implements NarcotrackEventHandler {
 
-    private final Logger LOGGER = LoggerFactory.getLogger(HardwareHandler.class);
+    private final Logger LOGGER = LoggerFactory.getLogger(HardwareModuleHandler.class);
 
     private final NarcotrackApplication application;
     private final NarcotrackEventManager eventManager;
     private SerialPort serialPort;
 
-    public HardwareHandler(NarcotrackApplication application) {
-        LOGGER.info("Starting HardwareHandler...");
+    public HardwareModuleHandler(NarcotrackApplication application) {
+        LOGGER.info("Starting HardwareModuleHandler...");
         this.application = application;
         eventManager = application.getEventManager();
         initSerialPort();
@@ -29,7 +29,7 @@ public class HardwareHandler implements NarcotrackEventHandler {
     }
 
     private void initSerialPort() {
-        String serialPortDescriptor = application.getConfig("HARDWARE_PORT");
+        String serialPortDescriptor = application.getConfig("HARDWARE_MODULE_PORT");
         if (serialPortDescriptor == null || serialPortDescriptor.trim().isEmpty()) {
             LOGGER.error("HARDWARE_PORT is null, empty or whitespace. Please check the configuration file");
             eventManager.dispatchOnUnrecoverableError();
@@ -42,15 +42,12 @@ public class HardwareHandler implements NarcotrackEventHandler {
             LOGGER.error("Could not find SerialPort with descriptor {}", serialPortDescriptor);
             try {
                 LOGGER.info("Available SerialPortDescriptors are {}", Arrays.stream(SerialPort.getCommPorts()).map(SerialPort::getSystemPortPath).collect(Collectors.joining(", ")));
-                eventManager.dispatchOnRecoverableError();
-                application.scheduleRestart();
-                System.exit(1);
             } catch (Exception ex) {
                 LOGGER.error("Could not list all SerialPortDescriptors", ex);
-                eventManager.dispatchOnRecoverableError();
-                application.scheduleRestart();
-                System.exit(1);
             }
+            eventManager.dispatchOnRecoverableError();
+            application.scheduleRestart();
+            System.exit(1);
 
         }
         serialPort.setComPortParameters(9600, 8, SerialPort.ONE_STOP_BIT, SerialPort.NO_PARITY);
@@ -60,7 +57,7 @@ public class HardwareHandler implements NarcotrackEventHandler {
             application.scheduleRestart();
             System.exit(1);
         }
-        LOGGER.info("Connected to SerialPort for HardwareHandler");
+        LOGGER.info("Connected to SerialPort for HardwareModuleHandler");
     }
 
     class HardwareHandlerShutdownHook extends Thread {
@@ -80,54 +77,49 @@ public class HardwareHandler implements NarcotrackEventHandler {
 
     @Override
     public void onSystemStart() {
-        LOGGER.info("Changing StatusLights from StartupAnimation to IdleAnimation");
-        sendCommand("statuslights:animate?aniamtion=fadein&red=0&green=0&blue=255&brightness=0.2&duration=1000&transition=endofcycle");
-        LOGGER.info("Activating keepalive on HardwareModule");
-        sendCommand("system:configure?keepalive=true");
+        LOGGER.info("Changing StatusLights to IdleAnimation");
+        sendCommand("statuslights:animate?animation=fadein&red=0&green=0&blue=255&brightness=0.3");
     }
 
     @Override
-    public void onIntervalStop() {
+    public void onIntervalEnd() {
         sendCommand("system:keepalive");
     }
 
     @Override
     public void onRecordingStart(Instant time) {
-        // Altes Licht muss noch ausfaden
-        sendCommand("statuslights:animate?aniamtion=loading&red=0&green=255&blue=0&brightness=0.3&duration=1500&infinite");
+        sendCommand("statuslights:animate?animation=fadeout&red=0&green=0&blue=255&brightness=0.3&now");
+        sendCommand("statuslights:animate?animation=loading&red=0&green=255&blue=0&brightness=0.5&duration=2000&infinite");
     }
 
     @Override
     public void onRecordingStop() {
-        sendCommand("statuslights:animate?aniamtion=fadein&red=0&green=0&blue=255&brightness=0.2&duration=1000&transition=endofcycle");
+        sendCommand("statuslights:animate?animation=fadein&red=0&green=0&blue=255&brightness=0.3");
     }
 
     @Override
     public void onGoodElectrodes() {
-        sendCommand("statuslights:colorchange?red=0&green=255&blue=0&duration=1000&transition=smooth");
+        sendCommand("statuslights:colorchange?red=0&green=255&blue=0");
     }
 
     @Override
     public void onLooseElectrode() {
-        sendCommand("statuslights:colorchange?red=255&green=165&blue=0&duration=1000&transition=smooth");
+        sendCommand("statuslights:colorchange?red=255&green=80&blue=0");
     }
 
     @Override
     public void onDetachedElectrode() {
-        sendCommand("statuslights:colorchange?red=255&green=0&blue=0&duration=1000&transition=smooth");
+        sendCommand("statuslights:colorchange?red=255&green=0&blue=0");
     }
 
     @Override
     public void onRecoverableError() {
-        sendCommand("statuslights:animate?aniamtion=error&red=255&green=165&blue=0&brightness=0.5&duration=1500&transition=endofcycle&repeats=10");
-        sendCommand("statuslights:animate?aniamtion=startup&red=0&green=0&blue=255&brightness=0.5&duration=1500&transition=endofcycle&infinite");
-        sendCommand("system:configure?phase=startup");
+        sendCommand("system:restart");
     }
 
     @Override
     public void onUnrecoverableError() {
-        sendCommand("statuslights:animate?aniamtion=error&red=255&green=0&blue=0&brightness=0.5&duration=1500&transition=endofcycle&infinite");
-        sendCommand("system:configure?keepalive=false");
+        sendCommand("system:error");
     }
 
     private void sendCommand(String command) {

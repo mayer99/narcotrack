@@ -1,15 +1,13 @@
 # placed in /etc/systemd/system/narcotrack.service
 [Unit]
-Description=Service (re)starting Narcotrack Java Application to record Narcotre>
+Description=Service (re)starting Narcotrack Java Application
 After=mariadb.service multi-user.target
 
 [Service]
 EnvironmentFile=/etc/environment
-ExecStartPre=/bin/sleep 60
-ExecStart=/usr/bin/java -jar /home/pi/narcotrack/narcotrack.jar
+ExecStartPre=/bin/sleep 30
+ExecStart=/usr/bin/java -jar /home/pi/narcotrack/app.jar
 WorkingDirectory=/home/pi/narcotrack
-Restart=always
-RestartSec=15
 User=pi
 
 [Install]

@@ -47,7 +47,7 @@ public interface NarcotrackEventHandler {
 
     }
 
-    default void onIntervalStop() {
+    default void onIntervalEnd() {
 
     }
 

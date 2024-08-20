@@ -70,7 +70,7 @@ public class NarcotrackEventManager {
 
     public void dispatchOnIntervalStop() {
         LOGGER.debug("Dispatching onIntervalStop");
-        handlers.forEach(NarcotrackEventHandler::onIntervalStop);
+        handlers.forEach(NarcotrackEventHandler::onIntervalEnd);
     }
 
     public void dispatchOnReceivedData(byte[] data) {

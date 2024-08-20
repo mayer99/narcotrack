@@ -24,7 +24,7 @@ public class NarcotrackApplication {
         LOGGER.info("Application started at {}", APPLICATION_START_TIME);
         Runtime.getRuntime().addShutdownHook(new NarcotrackApplicationShutdownHook());
         loadConfigFile();
-        eventManager.registerHandler(new HardwareHandler(this));
+        eventManager.registerHandler(new HardwareModuleHandler(this));
         eventManager.registerHandler(new BackupFileHandler());
         eventManager.registerHandler(new BadElectrodeListener(this));
         eventManager.registerHandler(new DatabaseHandler(this));
