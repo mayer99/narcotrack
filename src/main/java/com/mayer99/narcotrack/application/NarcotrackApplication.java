@@ -7,7 +7,6 @@ import com.mayer99.narcotrack.data.NarcotrackSerialPortReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.time.Instant;
 
 public class NarcotrackApplication {
@@ -25,6 +24,7 @@ public class NarcotrackApplication {
         eventManager.registerHandler(new BadElectrodeListener(this));
         eventManager.registerHandler(new DatabaseHandler(this));
         eventManager.registerHandler(new StatisticsHandler());
+        eventManager.registerHandler(new RemoteEventHandler());
 
         serialPortReader = new NarcotrackSerialPortReader(this);
     }

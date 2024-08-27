@@ -66,11 +66,12 @@ public class RemoteEventHandler implements NarcotrackEventHandler {
         }
     }
 
-    private void sendEventMessage(String name) {
+    private void sendEventMessage(String type, String message) {
         if (disabled) return;
         try {
             JSONObject log = new JSONObject();
-            log.put("name", name);
+            log.put("type", type);
+            log.put("message", message);
             log.put("created_at", System.currentTimeMillis());
 
             HttpRequest request = HttpRequest.newBuilder()
@@ -103,54 +104,54 @@ public class RemoteEventHandler implements NarcotrackEventHandler {
     @Override
     public void onRecoverableError() {
         if (disabled) return;
-        sendEventMessage("recoverable_error");
+        sendEventMessage("recoverable_error", "");
     }
 
     @Override
     public void onDetachedElectrode() {
         if (disabled) return;
-        sendEventMessage("detached_electrode");
+        sendEventMessage("detached_electrode", "");
     }
 
     @Override
     public void onLooseElectrode() {
         if (disabled) return;
-        sendEventMessage("loose_electrode");
+        sendEventMessage("loose_electrode", "");
     }
 
     @Override
     public void onGoodElectrodes() {
         if (disabled) return;
-        sendEventMessage("good_electrodes");
+        sendEventMessage("good_electrodes", "");
     }
 
     @Override
     public void onRecordingStart(Instant time) {
         if (disabled) return;
-        sendEventMessage("recording_start");
+        sendEventMessage("recording_start", "");
     }
 
     @Override
     public void onRecordingStop() {
         if (disabled) return;
-        sendEventMessage("recording_stop");
+        sendEventMessage("recording_stop", "");
     }
 
     @Override
     public void onHandleRemains(ReceivedRemainsEvent event) {
         if (disabled) return;
-        sendEventMessage("handle_remains");
+        sendEventMessage("handle_remains", "");
     }
 
     @Override
     public void onIntervalStart() {
         if (disabled) return;
-        sendEventMessage("interval_start");
+        sendEventMessage("interval_start", "");
     }
 
     @Override
     public void onUnrecoverableError() {
         if (disabled) return;
-        sendEventMessage("unrecoverable_error");
+        sendEventMessage("unrecoverable_error", "");
     }
 }
