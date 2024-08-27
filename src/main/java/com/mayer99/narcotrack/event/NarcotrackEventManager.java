@@ -102,4 +102,8 @@ public class NarcotrackEventManager {
         LOGGER.debug("Dispatching onHandleRemains");
         handlers.forEach(handler -> handler.onHandleRemains(event));
     }
+
+    public void cleanup() {
+        handlers.forEach(NarcotrackEventHandler::cleanup);
+    }
 }

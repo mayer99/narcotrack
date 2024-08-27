@@ -1,7 +1,9 @@
 package com.mayer99.narcotrack.event.handlers;
 
 
+import com.mayer99.narcotrack.application.NarcotrackApplication;
 import com.mayer99.narcotrack.event.NarcotrackEventHandler;
+import com.mayer99.narcotrack.event.NarcotrackEventManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,16 +18,27 @@ import java.util.Date;
 
 public class BackupFileHandler implements NarcotrackEventHandler {
 
-    private final int MAX_BACKUP_BATCHES = 30;
+    private final int MAX_BATCH_COUNT = 30;
     private final Logger LOGGER = LoggerFactory.getLogger(BackupFileHandler.class);
     private final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
     private final ByteBuffer buffer = ByteBuffer.allocate(200_000).order(ByteOrder.LITTLE_ENDIAN);
     private String backupFileName;
     private Path backupFilePath;
     private int currentBatchCount = 0;
+    private final NarcotrackApplication application;
+    private final NarcotrackEventManager eventManager;
 
-    public BackupFileHandler() {
+    public BackupFileHandler(NarcotrackApplication application) {
         LOGGER.info("BackupFileHandler starting...");
+        this.application = application;
+        eventManager = application.getEventManager();
+    }
+
+    @Override
+    public void cleanup() {
+        saveBufferToBackupFile();
+        buffer.clear();
+        LOGGER.info("Saved buffer to backup file");
     }
 
     @Override
@@ -51,6 +64,7 @@ public class BackupFileHandler implements NarcotrackEventHandler {
         if (data.length + buffer.position() > buffer.capacity()) {
             LOGGER.warn("New data would overflow remaining buffer space");
             saveBufferToBackupFile();
+            currentBatchCount = 0;
             if (data.length > buffer.capacity()) {
                 LOGGER.warn("New data would overflow the buffer, moving new data to remains");
                 saveToBackupFile(data);
@@ -60,8 +74,8 @@ public class BackupFileHandler implements NarcotrackEventHandler {
         currentBatchCount++;
         buffer.put(data);
         LOGGER.debug("Added {} bytes to BackupBuffer. BackupBuffer now contains {}/{} bytes after {} calls", data.length, buffer.position(), buffer.capacity(), currentBatchCount);
-        if (currentBatchCount >= MAX_BACKUP_BATCHES) {
-            LOGGER.debug("Reached maximum currentBatchCount, saving buffer to backup file");
+        if (currentBatchCount >= MAX_BATCH_COUNT) {
+            LOGGER.debug("currentBatchCount reached MAX_BATCH_COUNT, saving buffer to backup file");
             currentBatchCount = 0;
             saveBufferToBackupFile();
         }
@@ -73,8 +87,11 @@ public class BackupFileHandler implements NarcotrackEventHandler {
             int bytesWritten = channel.write(buffer);
             buffer.clear();
             LOGGER.info("Added {} bytes of the buffer to the backup file", bytesWritten);
-        } catch (IOException e) {
+        } catch (Exception e) {
             LOGGER.error("Could not save to backupFile", e);
+            eventManager.dispatchOnRecoverableError();
+            application.scheduleRestart();
+            application.cleanupAndExit();
         }
     }
 
@@ -82,8 +99,11 @@ public class BackupFileHandler implements NarcotrackEventHandler {
         try {
             Files.write(backupFilePath, data, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
             LOGGER.info("Added {} bytes to the backup file", data.length);
-        } catch (IllegalArgumentException | IOException | UnsupportedOperationException | SecurityException e) {
+        } catch (Exception e) {
             LOGGER.error("Could not save to backupFile", e);
+            eventManager.dispatchOnRecoverableError();
+            application.scheduleRestart();
+            application.cleanupAndExit();
         }
     }
 

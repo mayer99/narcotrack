@@ -12,10 +12,6 @@ public class ReceivedRemainsEvent extends NarcotrackEvent {
     public ReceivedRemainsEvent(int time, byte[] data) {
         super(time);
         chunks = new ArrayList<>();
-        if (data.length <= 1000) {
-            chunks.add(data);
-            return;
-        }
         for (int i = 0; i < data.length; i += 1000) {
             chunks.add(Arrays.copyOfRange(data, i, data.length - i > 1000 ? i + 1000 : data.length));
         }

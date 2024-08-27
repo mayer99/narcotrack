@@ -32,32 +32,28 @@ public class DatabaseHandler implements NarcotrackEventHandler {
         LOGGER.info("DatabaseHandler starting...");
         this.application = application;
         eventManager = application.getEventManager();
+        connectDatabase();
+        createStatements();
+    }
 
-        String databaseURL = application.getConfig("DATABASE_URL");
-        String databaseUsername = application.getConfig("DATABASE_USERNAME");
-        String databasePassword = application.getConfig("DATABASE_PASSWORD");
-
-        if (databaseURL == null || databaseURL.trim().isEmpty()) {
-            LOGGER.error("DATABASE_URL is null, empty or whitespace. Please check the configuration file");
-            eventManager.dispatchOnUnrecoverableError();
-            System.exit(1);
-        }
-
-        if (databaseUsername == null || databaseUsername.trim().isEmpty()) {
-            LOGGER.error("DATABASE_USERNAME is null, empty or whitespace. Please check the configuration file");
-            eventManager.dispatchOnUnrecoverableError();
-            System.exit(1);
-        }
-
-        if (databasePassword == null || databasePassword.trim().isEmpty()) {
-            LOGGER.error("DATABASE_PASSWORD is null, empty or whitespace. Please check the configuration file");
-            eventManager.dispatchOnUnrecoverableError();
-            System.exit(1);
-        }
-
-        LOGGER.info("Connecting to database {} as {}", databaseURL, databaseUsername);
+    private void connectDatabase() {
         try {
+            String databaseURL = NarcotrackApplication.getEnvironmentVariable("DATABASE_URL");
+            String databaseUsername = NarcotrackApplication.getEnvironmentVariable("DATABASE_USERNAME");
+            String databasePassword = NarcotrackApplication.getEnvironmentVariable("DATABASE_PASSWORD");
+
+            LOGGER.info("Connecting to database {} as {}", databaseURL, databaseUsername);
             dbConnection = DriverManager.getConnection(databaseURL, databaseUsername, databasePassword);
+        } catch (Exception e) {
+            LOGGER.error("Could not connect to database", e);
+            eventManager.dispatchOnRecoverableError();
+            application.scheduleRestart();
+            application.cleanupAndExit();
+        }
+    }
+
+    private void createStatements() {
+        try {
             recordingStatement = dbConnection.prepareStatement("INSERT INTO recordings(start_time) VALUES(?)", Statement.RETURN_GENERATED_KEYS);
             eegStatement = dbConnection.prepareStatement("INSERT INTO frame_eeg(record_id, recorded_at, frameCountPerSecond, chk_sum, checksum_valid, raw) VALUES(?, ?, ?, ?, ?, ?)");
             currentAssessmentStatement = dbConnection.prepareStatement("INSERT INTO frame_current_assessment(record_id, recorded_at, eeg_index, emg_index, delta_rel_1, delta_rel_2, theta_rel_1, theta_rel_2, alpha_rel_1, alpha_rel_2, beta_rel_1, beta_rel_2, power_1, power_2, median_1, median_2, edge_freq_1, edge_freq_2, artifacts_1, artifacts_2, alerts , info, bsr_short_1, bsr_medium_1, reserved_1, sti_ch_1, sti_ch_2, bsr_short_2, bsr_medium_2, ibi_ch_1, ibi_ch_2, a_eeg_min_1, a_eeg_max_1, a_eeg_min_2, a_eeg_max_2, reserved_2, chk_sum, checksum_valid, raw) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -65,27 +61,24 @@ public class DatabaseHandler implements NarcotrackEventHandler {
             spectrumStatement = dbConnection.prepareStatement("INSERT INTO power_spectrum(frame_id, channel, 0_0, 0_5, 1_0, 1_5, 2_0, 2_5, 3_0, 3_5, 4_0, 4_5, 5_0, 5_5, 6_0, 6_5, 7_0, 7_5, 8_0, 8_5, 9_0, 9_5, 10_0, 10_5, 11_0, 11_5, 12_0, 12_5, 13_0, 13_5, 14_0, 14_5, 15_0, 15_5, 16_0, 16_5, 17_0, 17_5, 18_0, 18_5, 19_0, 19_5, 20_0, 20_5, 21_0, 21_5, 22_0, 22_5, 23_0, 23_5, 24_0, 24_5, 25_0, 25_5, 26_0, 26_5, 27_0, 27_5, 28_0, 28_5, 29_0, 29_5, 30_0, 30_5, 31_0, 31_5, 32_0, 32_5, 33_0, 33_5, 34_0, 34_5, 35_0, 35_5, 36_0, 36_5, 37_0, 37_5, 38_0, 38_5, 39_0, 39_5, 40_0, 40_5, 41_0, 41_5, 42_0, 42_5, 43_0, 43_5, 44_0, 44_5, 45_0, 45_5, 46_0, 46_5, 47_0, 47_5, 48_0, 48_5, 49_0, 49_5, 50_0, 50_5, 51_0, 51_5, 52_0, 52_5, 53_0, 53_5, 54_0, 54_5, 55_0, 55_5, 56_0, 56_5, 57_0, 57_5, 58_0, 58_5, 59_0, 59_5, 60_0, 60_5, 61_0, 61_5, 62_0, 62_5, 63_0, 63_5) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             electrodeCheckStatement = dbConnection.prepareStatement("INSERT INTO frame_electrode_check(record_id, recorded_at, imp_1_a, imp_1_b, imp_ref, imp_2_a, imp_2_b, info, chk_sum, checksum_valid, raw) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             remainsStatement = dbConnection.prepareStatement("INSERT INTO remains(record_id, recorded_at, raw) VALUES(?, ?, ?)");
-        } catch (SQLException e) {
-            LOGGER.error("Could not connect to database", e);
+        } catch (Exception e) {
+            LOGGER.error("Could not create statements", e);
             eventManager.dispatchOnRecoverableError();
             application.scheduleRestart();
-            System.exit(1);
+            application.cleanupAndExit();
         }
-        Runtime.getRuntime().addShutdownHook(new DatabaseHandlerShutdownHook());
     }
 
-    class DatabaseHandlerShutdownHook extends Thread {
-        public void run() {
-            LOGGER.warn("DatabaseHandlerShutdownHook triggered");
-            try {
-                if (dbConnection != null && !dbConnection.isClosed()) {
-                    LOGGER.info("Attempting to close DatabaseConnection");
-                    dbConnection.close();
-                    LOGGER.info("Closed DB connection");
-                }
-            } catch (Exception e) {
-                LOGGER.error("Could not close DatabaseConnection", e);
+    @Override
+    public void cleanup() {
+        try {
+            if (dbConnection != null && !dbConnection.isClosed()) {
+                LOGGER.info("Attempting to close DB connection");
+                dbConnection.close();
+                LOGGER.info("Closed DB connection");
             }
+        } catch (Exception e) {
+            LOGGER.error("Could not close DB connection", e);
         }
     }
 
@@ -104,35 +97,30 @@ public class DatabaseHandler implements NarcotrackEventHandler {
             rs.close();
             LOGGER.info("Created recording entry in database, id is {}", recordId);
             isRecording = true;
-            eegCounter = 0;
-            hasEEGs = false;
-            hasCurrentAssessments = false;
-            intervalCounter = 0;
         } catch (Exception e) {
             LOGGER.error("Could not create entry for recording", e);
             eventManager.dispatchOnRecoverableError();
             application.scheduleRestart();
-            System.exit(1);
+            application.cleanupAndExit();
         }
     }
 
     @Override
     public void onRecordingStop() {
-        recordId = -1;
         isRecording = false;
-        handleBatches();
+        recordId = -1;
+        eegCounter = 0;
         intervalCounter = 0;
+        sendEEGBatches();
+        sendCurrentAssessmentBatches();
     }
 
     @Override
     public void onReceivedEEG(ReceivedEEGEvent event) {
-        if (!isRecording) {
-            LOGGER.error("Could not process EEGEvent, there is no recording");
-            eventManager.dispatchOnRecoverableError();
-            application.scheduleRestart();
-            System.exit(1);
-        }
         try {
+            if (!isRecording) {
+                throw new Exception("Could not process EEGEvent, there is no recording");
+            }
             eegStatement.setShort(1, recordId);
             eegStatement.setLong(2, event.getTime());
             eegStatement.setShort(3, eegCounter);
@@ -142,29 +130,20 @@ public class DatabaseHandler implements NarcotrackEventHandler {
             eegStatement.addBatch();
             if (!hasEEGs) hasEEGs = true;
             eegCounter++;
-        } catch (SQLException e) {
+        } catch (Exception e) {
             LOGGER.error("Error processing EEG data", e);
-            try {
-                eegStatement.clearBatch();
-                LOGGER.info("Cleared eegBatch");
-            } catch (SQLException ex) {
-                LOGGER.error("Could not clear EEG Batch", ex);
-            } finally {
-                eegCounter = 0;
-                hasEEGs = false;
-            }
+            eventManager.dispatchOnRecoverableError();
+            application.scheduleRestart();
+            application.cleanupAndExit();
         }
     }
 
     @Override
     public void onReceivedCurrentAssessment(ReceivedCurrentAssessmentEvent event) {
-        if (!isRecording) {
-            LOGGER.error("Could not process ReceivedCurrentAssessmentEvent, there is no recording");
-            eventManager.dispatchOnRecoverableError();
-            application.scheduleRestart();
-            System.exit(1);
-        }
         try {
+            if (!isRecording) {
+                throw new Exception("Could not process ReceivedCurrentAssessmentEvent, there is no recording");
+            }
             currentAssessmentStatement.setShort(1, recordId); // record_id
             currentAssessmentStatement.setLong(2, event.getTime()); // recorded_at
             currentAssessmentStatement.setShort(3, event.getEegIndex()); // eeg_index
@@ -206,27 +185,20 @@ public class DatabaseHandler implements NarcotrackEventHandler {
             currentAssessmentStatement.setBytes(39, event.getRaw()); // raw
             currentAssessmentStatement.addBatch();
             if (!hasCurrentAssessments) hasCurrentAssessments = true;
-        } catch (SQLException e) {
-            LOGGER.error("Error processing Current Assessment data", e);
-            try {
-                currentAssessmentStatement.clearBatch();
-            } catch (SQLException ex) {
-                LOGGER.error("Could not clear currentAssessment Batch", ex);
-            } finally {
-                hasCurrentAssessments = false;
-            }
+        } catch (Exception e) {
+            LOGGER.error("Error processing CurrentAssessment data", e);
+            eventManager.dispatchOnRecoverableError();
+            application.scheduleRestart();
+            application.cleanupAndExit();
         }
     }
 
     @Override
     public void onReceivedPowerSpectrum(ReceivedPowerSpectrumEvent event) {
-        if (!isRecording) {
-            LOGGER.error("Could not process ReceivedPowerSpectrumEvent, there is no recording");
-            eventManager.dispatchOnRecoverableError();
-            application.scheduleRestart();
-            System.exit(1);
-        }
         try {
+            if (!isRecording) {
+                throw new Exception("Could not process ReceivedPowerSpectrumEvent, there is no recording");
+            }
             powerSpectrumStatement.setShort(1, recordId);
             powerSpectrumStatement.setLong(2, event.getTime());
             powerSpectrumStatement.setByte(3, event.getInfo());
@@ -234,20 +206,21 @@ public class DatabaseHandler implements NarcotrackEventHandler {
             powerSpectrumStatement.setBoolean(5, event.isChecksumValid());
             powerSpectrumStatement.setBytes(6, event.getRaw());
             if (powerSpectrumStatement.executeUpdate() < 1) {
-                LOGGER.error("Error sending block for power spectrum. Did not receive keys as result");
-                return;
+                throw new Exception("Error sending block for power spectrum. Did not receive keys as result");
             }
             ResultSet rs = powerSpectrumStatement.getGeneratedKeys();
-            if(rs.next()) {
-                int frameId = rs.getInt(1);
-                insertSpectrum(frameId, 1, event.getSpectrum1());
-                insertSpectrum(frameId, 2, event.getSpectrum2());
-            } else {
-                LOGGER.error("Error processing power spectrum block. Result has keys, but ResultSet is empty");
+            if (!rs.next()) {
+                throw new Exception("Error processing power spectrum block. Result has keys, but ResultSet is empty");
             }
+            int frameId = rs.getInt(1);
+            insertSpectrum(frameId, 1, event.getSpectrum1());
+            insertSpectrum(frameId, 2, event.getSpectrum2());
             rs.close();
-        } catch (SQLException e) {
+        } catch (Exception e) {
             LOGGER.error("Error processing Power Spectrum data", e);
+            eventManager.dispatchOnRecoverableError();
+            application.scheduleRestart();
+            application.cleanupAndExit();
         }
 
     }
@@ -264,13 +237,10 @@ public class DatabaseHandler implements NarcotrackEventHandler {
 
     @Override
     public void onReceivedElectrodeCheck(ReceivedElectrodeCheckEvent event) {
-        if (!isRecording) {
-            LOGGER.error("Could not process ReceivedElectrodeCheckEvent, there is no recording");
-            eventManager.dispatchOnRecoverableError();
-            application.scheduleRestart();
-            System.exit(1);
-        }
         try {
+            if (!isRecording) {
+                throw new Exception("Could not process ReceivedElectrodeCheckEvent, there is no recording");
+            }
             electrodeCheckStatement.setShort(1, recordId);
             electrodeCheckStatement.setLong(2, event.getTime());
             electrodeCheckStatement.setFloat(3, adjustImpedance(event.getImp1a()));
@@ -283,8 +253,11 @@ public class DatabaseHandler implements NarcotrackEventHandler {
             electrodeCheckStatement.setBoolean(10, event.isChecksumValid());
             electrodeCheckStatement.setBytes(11, event.getRaw());
             electrodeCheckStatement.executeUpdate();
-        } catch (SQLException e) {
+        } catch (Exception e) {
             LOGGER.error("Error processing Electrode Check data", e);
+            eventManager.dispatchOnRecoverableError();
+            application.scheduleRestart();
+            application.cleanupAndExit();
         }
     }
 
@@ -298,13 +271,10 @@ public class DatabaseHandler implements NarcotrackEventHandler {
 
     @Override
     public void onHandleRemains(ReceivedRemainsEvent event) {
-        if (!isRecording) {
-            LOGGER.error("Could not process HandleRemainsEvent, there is no recording");
-            eventManager.dispatchOnRecoverableError();
-            application.scheduleRestart();
-            System.exit(1);
-        }
         try {
+            if (!isRecording) {
+                throw new Exception("Could not process ReceivedRemainsEvent, there is no recording");
+            }
             remainsStatement.setShort(1, recordId);
             remainsStatement.setLong(2, event.getTime());
             for (byte[] chunk: event.getChunks()) {
@@ -313,61 +283,54 @@ public class DatabaseHandler implements NarcotrackEventHandler {
             }
             remainsStatement.executeBatch();
             LOGGER.warn("Sent Remains batch");
-        } catch (SQLException e) {
+        } catch (Exception e) {
             LOGGER.error("Error processing Remains data", e);
+            eventManager.dispatchOnRecoverableError();
+            application.scheduleRestart();
+            application.cleanupAndExit();
         }
-    }
-
-    @Override
-    public void onIntervalStart() {
-        if (!isRecording) return;
-        eegCounter = 0;
     }
 
     @Override
     public void onIntervalEnd() {
         if (!isRecording) return;
+        eegCounter = 0;
         intervalCounter++;
         if (intervalCounter < 10) return;
         intervalCounter = 0;
-        handleBatches();
-    }
-
-    private void handleBatches() {
-        LOGGER.debug("Sending batches to Database");
         if (hasEEGs) {
-            try {
-                eegStatement.executeBatch();
-                LOGGER.debug("Sent EEG batch");
-            } catch (SQLException e) {
-                LOGGER.error("Could not send EEG batch to database", e);
-                try {
-                    eegStatement.clearBatch();
-                } catch (SQLException ex) {
-                    LOGGER.error("Could not clear EEG batch", e);
-                    eventManager.dispatchOnRecoverableError();
-                    application.scheduleRestart();
-                    System.exit(1);
-                }
-            }
+            sendEEGBatches();
             hasEEGs = false;
         }
         if (hasCurrentAssessments) {
-            try {
-                currentAssessmentStatement.executeBatch();
-                LOGGER.debug("Sent CurrentAssessment batch");
-            } catch (SQLException e) {
-                LOGGER.error("Could not send CurrentAssessment batch to database", e);
-                try {
-                    currentAssessmentStatement.clearBatch();
-                } catch (SQLException ex) {
-                    LOGGER.error("Could not clear CurrentAssessment batch", e);
-                    eventManager.dispatchOnRecoverableError();
-                    application.scheduleRestart();
-                    System.exit(1);
-                }
-            }
+            sendCurrentAssessmentBatches();
             hasCurrentAssessments = false;
+        }
+    }
+
+    private void sendEEGBatches() {
+        LOGGER.debug("Sending EEG batches to database");
+        try {
+            eegStatement.executeBatch();
+            LOGGER.debug("Sent EEG batches");
+        } catch (SQLException e) {
+            LOGGER.error("Could not send EEG batches to database", e);
+            eventManager.dispatchOnRecoverableError();
+            application.scheduleRestart();
+            application.cleanupAndExit();
+        }
+    }
+
+    private void sendCurrentAssessmentBatches() {
+        LOGGER.debug("Sending CurrentAssessment batches to Database");
+        try {
+            currentAssessmentStatement.executeBatch();
+            LOGGER.debug("Sent CurrentAssessment batches");
+        } catch (SQLException e) {
+            LOGGER.error("Could not send CurrentAssessment batches to database", e);
+            eventManager.dispatchOnRecoverableError();
+            application.scheduleRestart();
+            application.cleanupAndExit();
         }
     }
 }

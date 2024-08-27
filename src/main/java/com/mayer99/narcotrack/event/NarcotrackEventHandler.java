@@ -74,4 +74,8 @@ public interface NarcotrackEventHandler {
     default void onHandleRemains(ReceivedRemainsEvent event) {
 
     }
+
+    default void cleanup() {
+
+    }
 }

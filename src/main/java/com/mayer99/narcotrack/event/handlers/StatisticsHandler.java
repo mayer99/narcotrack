@@ -29,27 +29,33 @@ public class StatisticsHandler implements NarcotrackEventHandler {
     }
 
     @Override
-    public void onRecordingStart(Instant time) {
+    public void onRecordingStop() {
         counter = 0;
         resetFrameCounts();
     }
 
     @Override
-    public void onIntervalEnd() {
+    public void onIntervalStart() {
         counter++;
-        if (counter >= 30) {
-            counter = 0;
-            LOGGER.info("Statistics of the last 30s:");
-            for (NarcotrackFrame frameType : NarcotrackFrame.values()) {
-                LOGGER.info("Received {} frames of type {}", frameCounts.get(frameType), frameType);
-            }
-            if ((float) frameCounts.get(NarcotrackFrame.EEG)/30 <= 15) {
-                LOGGER.warn("Did not receive enough frames of type EEG. On average {}/s", (float) frameCounts.get(NarcotrackFrame.EEG)/30);
-            }
-            if ((float) frameCounts.get(NarcotrackFrame.CURRENT_ASSESSMENT)/30 <= 0.95) {
-                LOGGER.warn("Did not receive enough frames of type CURRENT_ASSESSMENT. On average {}/s", (float) frameCounts.get(NarcotrackFrame.CURRENT_ASSESSMENT)/30);
-            }
+    }
+
+    @Override
+    public void onIntervalEnd() {
+        if (counter < 30) return;
+        counter = 0;
+        LOGGER.info("Statistics of the last 30s:");
+        for (NarcotrackFrame frame : NarcotrackFrame.values()) {
+            LOGGER.info("Received {} frames of type {}", frameCounts.get(frame), frame);
         }
+        float averageEEGFrames = frameCounts.get(NarcotrackFrame.EEG)/30.0f;
+        if (averageEEGFrames <= 15.0f) {
+            LOGGER.warn("Did not receive enough frames of type EEG. On average {}/s", averageEEGFrames);
+        }
+        float averageCurrentAssessmentFrames = frameCounts.get(NarcotrackFrame.CURRENT_ASSESSMENT)/30.0f;
+        if (averageCurrentAssessmentFrames <= 0.95f) {
+            LOGGER.warn("Did not receive enough frames of type CURRENT_ASSESSMENT. On average {}/s", averageCurrentAssessmentFrames);
+        }
+        resetFrameCounts();
     }
 
     @Override

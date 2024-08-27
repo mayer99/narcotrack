@@ -1,43 +1,32 @@
 package com.mayer99.narcotrack.application;
 
+import com.mayer99.logging.RemoteLoggingAppender;
 import com.mayer99.narcotrack.event.NarcotrackEventManager;
 import com.mayer99.narcotrack.event.handlers.*;
 import com.mayer99.narcotrack.data.NarcotrackSerialPortReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.time.Instant;
-import java.util.Properties;
 
 public class NarcotrackApplication {
 
     private final Logger LOGGER = LoggerFactory.getLogger(NarcotrackApplication.class);
-    private final Instant APPLICATION_START_TIME = Instant.now();
     private final NarcotrackEventManager eventManager = new NarcotrackEventManager();
-    private final Properties properties = new Properties();
+    private final NarcotrackSerialPortReader serialPortReader;
 
     public NarcotrackApplication() {
         LOGGER.info("NarcotrackApplication starting...");
-        LOGGER.info("Application started at {}", APPLICATION_START_TIME);
-        Runtime.getRuntime().addShutdownHook(new NarcotrackApplicationShutdownHook());
-        loadConfigFile();
+        LOGGER.info("Application started at {}", Instant.now());
+        checkLoggingAppender();
         eventManager.registerHandler(new HardwareModuleHandler(this));
-        eventManager.registerHandler(new BackupFileHandler());
+        eventManager.registerHandler(new BackupFileHandler(this));
         eventManager.registerHandler(new BadElectrodeListener(this));
         eventManager.registerHandler(new DatabaseHandler(this));
         eventManager.registerHandler(new StatisticsHandler());
 
-        new NarcotrackSerialPortReader(this);
-    }
-
-    class NarcotrackApplicationShutdownHook extends Thread {
-        @Override
-        public void run() {
-            LOGGER.warn("Exiting NarcotrackApplication...");
-        }
+        serialPortReader = new NarcotrackSerialPortReader(this);
     }
 
     public static void main(String[] args) {
@@ -50,28 +39,34 @@ public class NarcotrackApplication {
         LOGGER.warn("################################################################");
         try {
             Runtime.getRuntime().exec("sudo shutdown -r now");
-        } catch (IOException e) {
-            LOGGER.error("Could not schedule a restart", e);
+            LOGGER.info("Scheduled restart");
+        } catch (Exception e) {
+            LOGGER.error("Could not schedule restart", e);
         }
     }
 
-    private void loadConfigFile() {
-        LOGGER.info("Loading config file...");
-        try (InputStream input = new FileInputStream("narcotrack.config")) {
-            properties.load(input);
-        } catch (SecurityException | IOException | IllegalArgumentException | NullPointerException e) {
-            LOGGER.error("Could not load config file", e);
-            eventManager.dispatchOnUnrecoverableError();
-            System.exit(1);
+    public void cleanupAndExit() {
+        eventManager.cleanup();
+        serialPortReader.cleanup();
+        System.exit(0);
+    }
+
+    private void checkLoggingAppender() {
+        if (RemoteLoggingAppender.disabled) {
+            LOGGER.warn("RemoteLoggingAppender reports to be disabled");
+        } else {
+            LOGGER.info("RemoteLoggingAppender reports to be enabled");
         }
     }
 
-    public Properties getProperties() {
-        return properties;
+    public static String getEnvironmentVariable(String key) throws IllegalArgumentException, NullPointerException {
+        String value = System.getenv(key);
+        if (isNullEmptyOrWhitespace(value)) throw new IllegalArgumentException(String.format("%s is null, empty or whitespace.", key));
+        return value;
     }
 
-    public String getConfig(String key) {
-        return properties.getProperty(key);
+    public static boolean isNullEmptyOrWhitespace(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
     public NarcotrackEventManager getEventManager() {

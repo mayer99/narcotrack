@@ -40,62 +40,50 @@ public class NarcotrackSerialPortReader {
         this.application = application;
         eventManager = application.getEventManager();
         initializeSerialPort();
-        serialReadoutTask = ses.scheduleAtFixedRate(this::processSerialData, 1, 1, TimeUnit.SECONDS);
-        Runtime.getRuntime().addShutdownHook(new NarcotrackSerialPortReaderShutdownHook());
+        serialReadoutTask = ses.scheduleAtFixedRate(this::onInterval, 1, 1, TimeUnit.SECONDS);
+    }
+
+    private void logSerialPortDescriptors() {
+        try {
+            LOGGER.info("SerialPortDescriptors are {}", Arrays.stream(SerialPort.getCommPorts()).map(SerialPort::getSystemPortPath).collect(Collectors.joining(", ")));
+        } catch (Exception e) {
+            LOGGER.error("Could not list SerialPortDescriptors", e);
+        }
     }
 
     private void initializeSerialPort() {
-        String serialPortDescriptor = application.getProperties().getProperty("NARCOTREND_PORT");
-        if (serialPortDescriptor == null || serialPortDescriptor.trim().isEmpty()) {
-            LOGGER.error("NARCOTREND_PORT is null, empty or whitespace. Please check the configuration file");
-            eventManager.dispatchOnUnrecoverableError();
-            System.exit(1);
-        }
-        LOGGER.info("Connecting to SerialPort using descriptor {}...", serialPortDescriptor);
         try {
+            String serialPortDescriptor = NarcotrackApplication.getEnvironmentVariable("NARCOTREND_PORT");
+            LOGGER.info("Connecting to SerialPort using descriptor {}...", serialPortDescriptor);
             serialPort = SerialPort.getCommPort(serialPortDescriptor);
-        } catch (SerialPortInvalidPortException e) {
-            LOGGER.error("Could not find SerialPort with descriptor {}", serialPortDescriptor);
-            try {
-                LOGGER.info("Available SerialPortDescriptors are {}", Arrays.stream(SerialPort.getCommPorts()).map(SerialPort::getSystemPortPath).collect(Collectors.joining(", ")));
-                eventManager.dispatchOnRecoverableError();
-                application.scheduleRestart();
-                System.exit(1);
-            } catch (Exception ex) {
-                LOGGER.error("Could not list all SerialPortDescriptors", ex);
-                eventManager.dispatchOnRecoverableError();
-                application.scheduleRestart();
-                System.exit(1);
+            serialPort.setComPortParameters(115200, 8, SerialPort.ONE_STOP_BIT, SerialPort.NO_PARITY);
+            if (!serialPort.openPort()) {
+                throw new RuntimeException("Could not open serial port");
             }
-
-        }
-        serialPort.setComPortParameters(115200, 8, SerialPort.ONE_STOP_BIT, SerialPort.NO_PARITY);
-        if (!serialPort.openPort()) {
-            LOGGER.error("Could not open SerialPort");
+            LOGGER.info("Connected to SerialPort");
+        } catch (Exception e) {
+            LOGGER.error("Failed to initialize SerialPort.", e);
+            logSerialPortDescriptors();
             eventManager.dispatchOnRecoverableError();
             application.scheduleRestart();
-            System.exit(1);
+            application.cleanupAndExit();
         }
-        LOGGER.info("Connected to SerialPort");
+
     }
 
-    class NarcotrackSerialPortReaderShutdownHook extends Thread {
-        @Override
-        public void run() {
-            LOGGER.warn("NarcotrackSerialPortReaderShutdownHook triggered");
-            if (serialPort != null && serialPort.isOpen()) {
-                LOGGER.info("Attempting to close SerialPort");
-                if (serialPort.closePort()) {
-                    LOGGER.info("Closed SerialPort");
-                } else {
-                    LOGGER.error("Could not close SerialPort");
-                }
+    public void cleanup() {
+        if (serialPort != null && serialPort.isOpen()) {
+            LOGGER.info("Attempting to close SerialPort");
+            if (serialPort.closePort()) {
+                LOGGER.info("Closed SerialPort");
+            } else {
+                LOGGER.error("Could not close SerialPort");
             }
-            if (serialReadoutTask != null) {
-                serialReadoutTask.cancel(true);
-            }
-            ses.shutdown();
         }
+        if (serialReadoutTask != null) {
+            serialReadoutTask.cancel(true);
+        }
+        ses.shutdown();
     }
 
     private void handleUnpluggedSerialCable() {
@@ -103,91 +91,101 @@ public class NarcotrackSerialPortReader {
         if (isRecording) stopRecording();
         eventManager.dispatchOnRecoverableError();
         application.scheduleRestart();
-        System.exit(1);
+        application.cleanupAndExit();
+    }
+
+    private void onInterval() {
+        LOGGER.debug("SES called onInterval");
+        eventManager.dispatchOnIntervalStart();
+        processSerialData();
+        eventManager.dispatchOnIntervalStop();
     }
 
     private void processSerialData() {
-        eventManager.dispatchOnIntervalStart();
-        int bytesAvailable = serialPort.bytesAvailable();
-        if (bytesAvailable < 0) handleUnpluggedSerialCable();
-        if (bytesAvailable == 0) {
-            if (isRecording) {
-                LOGGER.info("Did not receive any data in this interval. Stopping recording");
-                stopRecording();
-            }
-            intervalsWithoutData++;
-            if (intervalsWithoutData%300 == 0) {
-                intervalsWithoutData = 0;
-                LOGGER.debug("No data received for 5 min");
-            }
-            eventManager.dispatchOnIntervalStop();
-            return;
-        }
-
-        if (!isRecording) {
-            intervalsWithoutData = 0;
-            LOGGER.info("Starting new recording");
-            startRecording();
-        }
-        int time = (int) (Duration.between(recordingStartTime, Instant.now()).abs().toSeconds());
-        byte[] data = new byte[bytesAvailable];
-        serialPort.readBytes(data, data.length);
-        eventManager.dispatchOnReceivedData(data);
-
-        LOGGER.debug("Buffer contains {}/{} bytes. Data contains {} bytes", buffer.position(), buffer.capacity(), data.length);
-        if (data.length > buffer.remaining()) {
-            if (data.length > buffer.capacity()) {
-                LOGGER.warn("Even the new data would overflow the buffer");
-                byte[] remains = new byte[buffer.position() + data.length];
-                buffer.flip();
-                buffer.get(remains, 0, buffer.position());
-                System.arraycopy(data, 0, remains, buffer.position(), data.length);
-                buffer.clear();
-                eventManager.dispatchOnHandleRemains(new ReceivedRemainsEvent(time, remains));
-                eventManager.dispatchOnIntervalStop();
+        try {
+            int bytesAvailable = serialPort.bytesAvailable();
+            if (bytesAvailable < 0) handleUnpluggedSerialCable();
+            if (bytesAvailable == 0) {
+                if (isRecording) {
+                    LOGGER.info("Did not receive any data in this interval. Stopping recording");
+                    stopRecording();
+                }
+                intervalsWithoutData++;
+                if (intervalsWithoutData%300 == 0) {
+                    intervalsWithoutData = 0;
+                    LOGGER.debug("No data received for 5 min");
+                }
                 return;
             }
-            LOGGER.warn("New data would overflow remaining buffer space");
-            byte[] remains = new byte[buffer.position()];
-            buffer.flip();
-            buffer.get(remains);
-            buffer.clear();
-            eventManager.dispatchOnHandleRemains(new ReceivedRemainsEvent(time, remains));
-        }
-        buffer.put(data);
-        buffer.flip();
-        for(int i = 0; i < buffer.limit(); i++) {
-            if (buffer.get(i) != START_BYTE) continue;
-            for (NarcotrackFrame frame: NarcotrackFrame.values()) {
-                if (buffer.limit() - i < frame.getLength()) continue;
-                if (buffer.get(i + 3) != frame.getIdentifier()) continue;
-                if (buffer.get(i + frame.getLength() - 1) != END_BYTE) continue;
-                if (buffer.position() != i) {
-                    byte[] remains = new byte[i - buffer.position()];
-                    buffer.get(remains);
-                    LOGGER.warn("There are remains before frame of type {}", frame);
-                    eventManager.dispatchOnHandleRemains(new ReceivedRemainsEvent(time, remains));
-                }
-                buffer.position(i);
-                buffer.mark();
-                switch (frame) {
-                    case EEG -> eventManager.dispatchOnReceivedEEG(new ReceivedEEGEvent(time, buffer));
-                    case CURRENT_ASSESSMENT -> eventManager.dispatchOnReceivedCurrentAssessment(new ReceivedCurrentAssessmentEvent(time, buffer));
-                    case POWER_SPECTRUM -> eventManager.dispatchOnReceivedPowerSpectrum(new ReceivedPowerSpectrumEvent(time, buffer));
-                    case ELECTRODE_CHECK -> eventManager.dispatchOnReceivedElectrodeCheck(new ReceivedElectrodeCheckEvent(time, buffer));
-                }
-                buffer.position(i + frame.getLength());
-                i += frame.getLength() - 1;
-                break;
+
+            if (!isRecording) {
+                intervalsWithoutData = 0;
+                LOGGER.info("Starting new recording");
+                startRecording();
             }
+            int time = (int) (Duration.between(recordingStartTime, Instant.now()).abs().toSeconds());
+            byte[] data = new byte[bytesAvailable];
+            serialPort.readBytes(data, data.length);
+            eventManager.dispatchOnReceivedData(data);
+
+            LOGGER.debug("Buffer contains {}/{} bytes. Data contains {} bytes", buffer.position(), buffer.capacity(), data.length);
+            if (data.length > buffer.remaining()) {
+                if (data.length > buffer.capacity()) {
+                    LOGGER.warn("Even the new data would overflow the buffer");
+                    byte[] remains = new byte[buffer.position() + data.length];
+                    buffer.flip();
+                    buffer.get(remains, 0, buffer.position());
+                    System.arraycopy(data, 0, remains, buffer.position(), data.length);
+                    buffer.clear();
+                    eventManager.dispatchOnHandleRemains(new ReceivedRemainsEvent(time, remains));
+                    return;
+                }
+                LOGGER.warn("New data would overflow remaining buffer space");
+                byte[] remains = new byte[buffer.position()];
+                buffer.flip();
+                buffer.get(remains);
+                buffer.clear();
+                eventManager.dispatchOnHandleRemains(new ReceivedRemainsEvent(time, remains));
+            }
+            buffer.put(data);
+            buffer.flip();
+            for(int i = 0; i < buffer.limit(); i++) {
+                if (buffer.get(i) != START_BYTE) continue;
+                for (NarcotrackFrame frame: NarcotrackFrame.values()) {
+                    if (buffer.limit() - i < frame.getLength()) continue;
+                    if (buffer.get(i + 3) != frame.getIdentifier()) continue;
+                    if (buffer.get(i + frame.getLength() - 1) != END_BYTE) continue;
+                    if (buffer.position() != i) {
+                        byte[] remains = new byte[i - buffer.position()];
+                        buffer.get(remains);
+                        LOGGER.warn("There are remains before frame of type {}", frame);
+                        eventManager.dispatchOnHandleRemains(new ReceivedRemainsEvent(time, remains));
+                    }
+                    buffer.position(i);
+                    buffer.mark();
+                    switch (frame) {
+                        case EEG -> eventManager.dispatchOnReceivedEEG(new ReceivedEEGEvent(time, buffer));
+                        case CURRENT_ASSESSMENT -> eventManager.dispatchOnReceivedCurrentAssessment(new ReceivedCurrentAssessmentEvent(time, buffer));
+                        case POWER_SPECTRUM -> eventManager.dispatchOnReceivedPowerSpectrum(new ReceivedPowerSpectrumEvent(time, buffer));
+                        case ELECTRODE_CHECK -> eventManager.dispatchOnReceivedElectrodeCheck(new ReceivedElectrodeCheckEvent(time, buffer));
+                    }
+                    buffer.position(i + frame.getLength());
+                    i += frame.getLength() - 1;
+                    break;
+                }
+            }
+            if (buffer.hasRemaining()) {
+                LOGGER.debug("Remaining bytes of length {} at the end of the buffer", buffer.remaining());
+                buffer.compact();
+            } else {
+                buffer.clear();
+            }
+        } catch (Exception e) {
+            LOGGER.error("Failed to process serial data", e);
+            eventManager.dispatchOnRecoverableError();
+            application.scheduleRestart();
+            application.cleanupAndExit();
         }
-        if (buffer.hasRemaining()) {
-            LOGGER.debug("Remaining bytes of length {} at the end of the buffer", buffer.remaining());
-            buffer.compact();
-        } else {
-            buffer.clear();
-        }
-        eventManager.dispatchOnIntervalStop();
     }
 
     private void startRecording() {

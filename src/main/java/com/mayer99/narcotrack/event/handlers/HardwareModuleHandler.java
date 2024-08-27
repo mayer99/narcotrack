@@ -24,53 +24,43 @@ public class HardwareModuleHandler implements NarcotrackEventHandler {
         LOGGER.info("Starting HardwareModuleHandler...");
         this.application = application;
         eventManager = application.getEventManager();
-        initSerialPort();
-        Runtime.getRuntime().addShutdownHook(new HardwareHandlerShutdownHook());
+        initializeSerialPort();
     }
 
-    private void initSerialPort() {
-        String serialPortDescriptor = application.getConfig("HARDWARE_MODULE_PORT");
-        if (serialPortDescriptor == null || serialPortDescriptor.trim().isEmpty()) {
-            LOGGER.error("HARDWARE_PORT is null, empty or whitespace. Please check the configuration file");
-            eventManager.dispatchOnUnrecoverableError();
-            System.exit(1);
-        }
-        LOGGER.info("Connecting to SerialPort using descriptor {}...", serialPortDescriptor);
+    private void logSerialPortDescriptors() {
         try {
-            serialPort = SerialPort.getCommPort(serialPortDescriptor);
-        } catch (SerialPortInvalidPortException e) {
-            LOGGER.error("Could not find SerialPort with descriptor {}", serialPortDescriptor);
-            try {
-                LOGGER.info("Available SerialPortDescriptors are {}", Arrays.stream(SerialPort.getCommPorts()).map(SerialPort::getSystemPortPath).collect(Collectors.joining(", ")));
-            } catch (Exception ex) {
-                LOGGER.error("Could not list all SerialPortDescriptors", ex);
-            }
-            eventManager.dispatchOnRecoverableError();
-            application.scheduleRestart();
-            System.exit(1);
-
+            LOGGER.info("SerialPortDescriptors are {}", Arrays.stream(SerialPort.getCommPorts()).map(SerialPort::getSystemPortPath).collect(Collectors.joining(", ")));
+        } catch (Exception e) {
+            LOGGER.error("Could not list SerialPortDescriptors", e);
         }
-        serialPort.setComPortParameters(9600, 8, SerialPort.ONE_STOP_BIT, SerialPort.NO_PARITY);
-        if (!serialPort.openPort()) {
-            LOGGER.error("Could not open SerialPort");
-            eventManager.dispatchOnRecoverableError();
-            application.scheduleRestart();
-            System.exit(1);
-        }
-        LOGGER.info("Connected to SerialPort for HardwareModuleHandler");
     }
 
-    class HardwareHandlerShutdownHook extends Thread {
-        @Override
-        public void run() {
-            LOGGER.warn("HardwareHandlerShutdownHook triggered");
-            if (serialPort != null && serialPort.isOpen()) {
-                LOGGER.info("Attempting to close SerialPort");
-                if (serialPort.closePort()) {
-                    LOGGER.info("Closed SerialPort");
-                } else {
-                    LOGGER.error("Could not close SerialPort");
-                }
+    private void initializeSerialPort() {
+        try {
+            String serialPortDescriptor = NarcotrackApplication.getEnvironmentVariable("HARDWARE_MODULE_PORT");
+            serialPort = SerialPort.getCommPort(serialPortDescriptor);
+            serialPort.setComPortParameters(9600, 8, SerialPort.ONE_STOP_BIT, SerialPort.NO_PARITY);
+            if (!serialPort.openPort()) {
+                throw new RuntimeException("Failed to open SerialPort.");
+            }
+        } catch (Exception e) {
+            LOGGER.error("Failed to initialize SerialPort.", e);
+            logSerialPortDescriptors();
+            eventManager.dispatchOnRecoverableError();
+            application.scheduleRestart();
+            application.cleanupAndExit();
+        }
+    }
+
+    @Override
+    public void cleanup() {
+        LOGGER.warn("cleanup...");
+        if (serialPort != null && serialPort.isOpen()) {
+            LOGGER.info("Attempting to close SerialPort");
+            if (serialPort.closePort()) {
+                LOGGER.info("Closed SerialPort");
+            } else {
+                LOGGER.error("Could not close SerialPort");
             }
         }
     }
@@ -126,6 +116,11 @@ public class HardwareModuleHandler implements NarcotrackEventHandler {
         LOGGER.debug("Sending command {} to HardwareModule", command);
         command += "\n";
         byte[] bytes = command.getBytes();
-        serialPort.writeBytes(bytes, bytes.length);
+        if (serialPort.writeBytes(bytes, bytes.length) < 0) {
+            LOGGER.error("Could not write bytes to SerialPort");
+            eventManager.dispatchOnRecoverableError();
+            application.scheduleRestart();
+            application.cleanupAndExit();
+        }
     }
 }

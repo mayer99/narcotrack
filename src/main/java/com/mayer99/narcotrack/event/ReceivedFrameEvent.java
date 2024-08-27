@@ -16,9 +16,9 @@ public abstract class ReceivedFrameEvent extends NarcotrackEvent {
     protected final byte[] checkSum;
     protected final boolean isChecksumValid;
 
-    public ReceivedFrameEvent(int time, ByteBuffer buffer, NarcotrackFrame frameType) {
+    public ReceivedFrameEvent(int time, ByteBuffer buffer, NarcotrackFrame frame) {
         super(time);
-        length = frameType.getLength();
+        length = frame.getLength();
         raw = new byte[length];
         buffer.get(raw);
         checkSum = Arrays.copyOfRange(raw, raw.length - 3, raw.length - 1);
@@ -30,7 +30,7 @@ public abstract class ReceivedFrameEvent extends NarcotrackEvent {
         ByteBuffer checkSumBuffer = ByteBuffer.allocate(4).putInt(calculatedCheckSum).position(2);
         isChecksumValid = checkSum[1] == checkSumBuffer.get() && checkSum[0] == checkSumBuffer.get();
         if (!isChecksumValid) {
-            LOGGER.error("Received frame of type {} with invalid checksum at {} s", frameType, time);
+            LOGGER.error("Received frame of type {} with invalid checksum at {} s", frame, time);
         }
         buffer.reset();
     }

@@ -1,9 +1,5 @@
 package com.mayer99.narcotrack.data;
 
-
-import java.util.Arrays;
-import java.util.Comparator;
-
 public enum NarcotrackFrame {
 
     EEG((byte)0xF1, 40),
@@ -26,7 +22,5 @@ public enum NarcotrackFrame {
     public int getLength() {
         return length;
     }
-
-    public static final NarcotrackFrame SHORTEST_FRAME_TYPE = Arrays.stream(values()).min(Comparator.comparing(NarcotrackFrame::getLength)).orElse(ELECTRODE_CHECK);
 
 }
